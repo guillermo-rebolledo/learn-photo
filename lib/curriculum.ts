@@ -6,6 +6,72 @@ type Lesson = {
   time: `${number} min`;
 };
 
+export type CurriculumSource = {
+  title: string;
+  publisher: string;
+  url: `https://${string}`;
+};
+
+export const lessonOne = {
+  slug: "light-and-exposure",
+  sources: [
+    { title: "Understanding ISO sensitivity", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/c/tips-and-techniques/understanding-iso-sensitivity" },
+    { title: "Exposure", publisher: "Cambridge in Colour", url: "https://www.cambridgeincolour.com/tutorials/camera-exposure.htm" },
+  ] satisfies CurriculumSource[],
+} as const;
+
+export const neutralStillLifeScene = {
+  id: "neutral-still-life",
+  sourceAsset: "neutral-still-life-960.jpg",
+  highlightMask: "neutral-still-life-highlights.svg",
+  assumptions: { focalLengthMm: 28, focusDistanceM: 1.2, stability: "handheld", subjectMotion: "still" },
+  meterReference: { aperture: 5.6, shutter: 60, iso: 400 },
+  calibration: {
+    achievedWithinStops: 0.35,
+    closeWithinStops: 1.1,
+    rendering: { minBrightness: 0.28, maxBrightness: 2.3, maxHighlightOpacity: 0.72, highlightOpacityPerStop: 0.36 },
+  },
+} as const;
+
+export const lessonOneCriteria = {
+  usableExposure: {
+    id: "usable-exposure",
+    feedback: {
+      achieved: "The tabletop tones remain clear and natural for this Photographic Intention.",
+      darker: "The scene is darker than intended. Use a slower shutter, wider aperture, or higher ISO.",
+      brighter: "The scene is brighter than intended. Use a faster shutter, narrower aperture, or lower ISO.",
+    },
+  },
+  highlightDetail: {
+    id: "highlight-detail",
+    achievedLimitStops: 0.35,
+    feedback: {
+      achieved: "The window-side highlights retain useful detail.",
+      compromised: "Bright objects are losing separation. Reduce Rendered Brightness to protect them.",
+    },
+  },
+} as const;
+
+export const lessonOneChallenge = {
+  id: "balanced-still-life",
+  lessonSlug: lessonOne.slug,
+  sceneId: neutralStillLifeScene.id,
+  photographicIntention: "Keep the tabletop tones natural while preserving the bright window-side objects.",
+  successCriteria: [lessonOneCriteria.usableExposure, lessonOneCriteria.highlightDetail] as const,
+} as const;
+
+function validateLessonOne() {
+  const sourceUrls = new Set(lessonOne.sources.map(({ url }) => url));
+  const manifestSlugs = new Set(lessons.map(({ slug }) => slug));
+  if (lessonOne.sources.length < 2 || sourceUrls.size !== lessonOne.sources.length || lessonOne.sources.some((source) => !source.title.trim() || !source.publisher.trim() || !source.url.startsWith("https://"))) {
+    throw new Error("Lesson 1 requires repository-managed explanation and at least two secure Curriculum Sources.");
+  }
+  const criterionIds = new Set(lessonOneChallenge.successCriteria.map(({ id }) => id));
+  if (!manifestSlugs.has(lessonOneChallenge.lessonSlug) || lessonOneChallenge.sceneId !== neutralStillLifeScene.id || criterionIds.size !== 2 || criterionIds.size !== lessonOneChallenge.successCriteria.length) {
+    throw new Error("Lesson 1 Challenge relationships are inconsistent.");
+  }
+}
+
 function defineLearningPath<const T extends readonly Lesson[]>(items: T): T {
   const slugs = new Set(items.map(({ slug }) => slug));
   const numbers = new Set(items.map(({ number }) => number));
@@ -25,3 +91,5 @@ export const lessons = defineLearningPath([
   { slug: "exposure-modes", number: "07", title: "Exposure modes", summary: "Decide which choices belong to you or the Camera.", time: "9 min" },
   { slug: "choosing-settings", number: "08", title: "Choosing settings for an intention", summary: "Bring every Exposure Control together.", time: "10 min" },
 ] as const);
+
+validateLessonOne();
