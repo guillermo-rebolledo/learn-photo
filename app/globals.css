@@ -77,6 +77,19 @@ h1 { max-width: 12ch; margin: 0; font-size: clamp(3rem, 6vw, 5.5rem); font-weigh
 .landing-control { align-self: center; display: grid; gap: .25rem; color: var(--muted); font-size: .72rem; font-weight: 700; }
 .landing-control select { min-height: 2.35rem; padding-block: .35rem; }
 .photo-credit { margin: .55rem 0 0; color: var(--muted); font-size: .67rem; text-align: right; }
+.lesson-preview-frame.portrait-preview { aspect-ratio: 2 / 3; }
+.portrait-preview img { object-position: center; }
+.portrait-subject { mask: url("/images/window-light-portrait-subject.svg") center / cover no-repeat; }
+.portrait-background { will-change: filter; }
+.control-outcome { margin: .5rem 0 0; color: var(--muted); font-size: .88rem; }
+.scene-assumptions { margin-top: 1rem; padding: 1rem 1.2rem; border: 1px solid var(--line); }
+.scene-assumptions summary { min-height: 2.75rem; display: flex; align-items: center; cursor: pointer; font-weight: 720; }
+.scene-assumptions p { max-width: 65rem; color: var(--muted); }
+.visual-fallback { display: none; }
+.no-visual-effects .portrait-background { filter: none !important; transform: none !important; }
+.no-visual-effects .portrait-subject { display: none; }
+.no-visual-effects .visual-fallback { display: inline; }
+.portrait-feedback { margin-top: 1.5rem; }
 
 .learning-path { width: min(100% - 2rem, 70rem); margin: 0 auto 7rem; }
 .section-heading { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; padding-bottom: 2rem; border-bottom: 1px solid var(--line); align-items: end; }
@@ -95,8 +108,8 @@ h1 { max-width: 12ch; margin: 0; font-size: clamp(3rem, 6vw, 5.5rem); font-weigh
 .simple-page { width: min(100% - 2rem, 58rem); min-height: calc(100vh - 11rem); margin: 0 auto; padding: 8rem 0; }
 .simple-page h1 { max-width: 15ch; font-size: clamp(3rem, 7vw, 6rem); }
 .lesson-page h1 { max-width: 14ch; }
-.lesson-one-page { width: min(100% - 2rem, 74rem); margin: 0 auto; padding: 5rem 0 7rem; }
-.lesson-one-page > h1 { max-width: 14ch; font-size: clamp(3rem, 7vw, 6rem); }
+.interactive-lesson-page { width: min(100% - 2rem, 74rem); margin: 0 auto; padding: 5rem 0 7rem; }
+.interactive-lesson-page > h1 { max-width: 14ch; font-size: clamp(3rem, 7vw, 6rem); }
 .lesson-explanation { max-width: 46rem; margin: 5rem 0 7rem; }
 .lesson-explanation h2, .experiment h2, .feedback h2 { margin: 0 0 1.25rem; font-size: clamp(2rem, 4vw, 3.5rem); }
 .lesson-explanation > p:not(.eyebrow) { color: var(--muted); font-size: 1.12rem; line-height: 1.7; }
