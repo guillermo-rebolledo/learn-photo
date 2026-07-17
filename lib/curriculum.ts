@@ -1,3 +1,5 @@
+import imageManifest from "@/public/images/manifest.json";
+
 type Lesson = {
   slug: string;
   number: string;
@@ -19,6 +21,23 @@ type SuccessCriterion = {
   feedback: { achieved: string; close: string; missed: string };
 };
 
+type LessonDefinition = { slug: string; sources: readonly CurriculumSource[] };
+type PortraitScene = {
+  id: string;
+  sourceAsset: string;
+  depthAssets: { background: string; subjectMask: string };
+  assumptions: { format: string; focalLengthMm: number; focusDistanceM: number; stability: string; subjectMotion: string };
+  meterReference: { aperture: number; shutter: number; iso: number };
+  calibration: { shallowThrough: number; deepFrom: number; blurRadius: { shallow: number; moderate: number; deep: number }; representativeApertures: readonly number[] };
+};
+type PortraitChallenge = {
+  id: string;
+  lessonSlug: string;
+  sceneId: string;
+  photographicIntentions: Record<"soft-background" | "defined-background", { label: string; targetExposureStops: number }>;
+  successCriteria: readonly SuccessCriterion[];
+};
+
 export const lessonOne = {
   slug: "light-and-exposure",
   sources: [
@@ -35,6 +54,38 @@ export const lessonTwo = {
     { title: "ISO speed and exposure", publisher: "Canon", url: "https://www.canon-europe.com/pro/infobank/iso/" },
   ] satisfies CurriculumSource[],
 } as const;
+
+export const lessonThree = {
+  slug: "aperture-and-depth-of-field",
+  sources: [
+    { title: "Understanding maximum aperture", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/c/tips-and-techniques/understanding-maximum-aperture" },
+    { title: "Depth of field", publisher: "Cambridge in Colour", url: "https://www.cambridgeincolour.com/tutorials/depth-of-field.htm" },
+    { title: "Depth of field explained", publisher: "Canon", url: "https://www.canon-europe.com/get-inspired/tips-and-techniques/depth-of-field/" },
+  ] satisfies CurriculumSource[],
+} as const satisfies LessonDefinition;
+
+export const windowLightPortraitScene = {
+  id: "window-light-portrait",
+  sourceAsset: "window-light-portrait-960.jpg",
+  depthAssets: { background: "window-light-portrait-960.jpg", subjectMask: "window-light-portrait-subject.svg" },
+  assumptions: { format: "APS-C", focalLengthMm: 50, focusDistanceM: 2.2, stability: "handheld", subjectMotion: "still" },
+  meterReference: { aperture: 5.6, shutter: 60, iso: 400 },
+  calibration: { shallowThrough: 2.8, deepFrom: 8, blurRadius: { shallow: 14, moderate: 8, deep: 0 }, representativeApertures: [2, 5.6, 11] },
+} as const satisfies PortraitScene;
+
+export const lessonThreeChallenge = {
+  id: "portrait-depth-intention",
+  lessonSlug: lessonThree.slug,
+  sceneId: windowLightPortraitScene.id,
+  photographicIntentions: {
+    "soft-background": { label: "Keep the portrait usable while strongly softening the room.", targetExposureStops: 0 },
+    "defined-background": { label: "Keep the portrait usable while preserving the Source Photograph’s available background definition.", targetExposureStops: 0 },
+  },
+  successCriteria: [
+    { id: "usable-exposure", label: "Usable exposure", essential: true, feedback: { achieved: "The portrait has usable exposure.", close: "The portrait is close to usable.", missed: "The portrait is not usable yet." } },
+    { id: "intended-depth", label: "Intended depth of field", essential: true, feedback: { achieved: "The relative depth supports the intention.", close: "The depth is close to the intention.", missed: "The depth conflicts with the intention." } },
+  ] satisfies SuccessCriterion[],
+} as const satisfies PortraitChallenge;
 
 export const neutralStillLifeScene = {
   id: "neutral-still-life",
@@ -119,6 +170,20 @@ function validateLessonTwo() {
   }
 }
 
+function validateLessonThree() {
+  const manifestSlugs = new Set(lessons.map(({ slug }) => slug));
+  const sourceUrls = new Set(lessonThree.sources.map(({ url }) => url));
+  const criterionIds = new Set(lessonThreeChallenge.successCriteria.map(({ id }) => id));
+  const validSources = lessonThree.sources.every((source) => source.title.trim() && source.publisher.trim() && source.url.startsWith("https://"));
+  const validCriteria = lessonThreeChallenge.successCriteria.every((criterion) => criterion.label.trim() && Object.values(criterion.feedback).every((text) => text.trim()));
+  const validScene = windowLightPortraitScene.sourceAsset.endsWith(".jpg") && windowLightPortraitScene.depthAssets.subjectMask.endsWith(".svg") && windowLightPortraitScene.assumptions.focalLengthMm > 0 && windowLightPortraitScene.assumptions.focusDistanceM > 0 && windowLightPortraitScene.calibration.representativeApertures.length >= 3;
+  const assetRecord = imageManifest.windowLightPortrait;
+  const validAssets = assetRecord.file === windowLightPortraitScene.sourceAsset && assetRecord.depthAssets.some(({ file }) => file === windowLightPortraitScene.depthAssets.subjectMask) && assetRecord.photographer.trim() && assetRecord.sourceUrl.startsWith("https://") && assetRecord.licenseUrl.startsWith("https://");
+  if (!manifestSlugs.has(lessonThreeChallenge.lessonSlug) || lessonThreeChallenge.sceneId !== windowLightPortraitScene.id || sourceUrls.size < 2 || sourceUrls.size !== lessonThree.sources.length || criterionIds.size !== 2 || !validSources || !validCriteria || !validScene || !validAssets) {
+    throw new Error("Lesson 3 curriculum, Challenge, and calibrated depth assets must be complete.");
+  }
+}
+
 function defineLearningPath<const T extends readonly Lesson[]>(items: T): T {
   const slugs = new Set(items.map(({ slug }) => slug));
   const numbers = new Set(items.map(({ number }) => number));
@@ -141,3 +206,4 @@ export const lessons = defineLearningPath([
 
 validateLessonOne();
 validateLessonTwo();
+validateLessonThree();

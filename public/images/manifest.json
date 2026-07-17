@@ -12,5 +12,20 @@
     "downloadDate": "2026-07-17",
     "licenseVerifiedDate": "2026-07-17",
     "modifications": "Resized and JPEG-optimized local derivatives for responsive web display."
+  },
+  "windowLightPortrait": {
+    "file": "window-light-portrait-960.jpg",
+    "derivatives": [
+      { "file": "window-light-portrait-480.jpg", "maxDimension": 480 },
+      { "file": "window-light-portrait-960.jpg", "maxDimension": 960 }
+    ],
+    "depthAssets": [{ "file": "window-light-portrait-subject.svg", "role": "subject mask" }],
+    "photographer": "Andrey Maximov",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Portrait_at_the_window.jpg",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+    "downloadDate": "2026-07-17",
+    "licenseVerifiedDate": "2026-07-17",
+    "modifications": "Auto-oriented, resized, and JPEG-optimized local derivatives; calibrated subject mask added for deterministic relative depth rendering."
   }
 }
