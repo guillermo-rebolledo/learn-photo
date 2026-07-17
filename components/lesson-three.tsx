@@ -29,6 +29,7 @@ export function LessonThree({ explanation }: { explanation: React.ReactNode }) {
   const [currentAttempt, setCurrentAttempt] = useState<PortraitAttempt | null>(null);
   const [previousAttempt, setPreviousAttempt] = useState<PortraitAttempt | null>(null);
   const [comparing, setComparing] = useState(false);
+  const [visualEffectsAvailable, setVisualEffectsAvailable] = useState(true);
   const guidedDepth = portraitDepth(guidedAperture);
   const challengeDepth = portraitDepth(settings.aperture);
   const exposure = portraitExposureStops(settings);
@@ -36,6 +37,11 @@ export function LessonThree({ explanation }: { explanation: React.ReactNode }) {
   const guidedStops = useMemo(() => Math.round((2 * Math.log2(5.6 / guidedAperture)) * 10) / 10, [guidedAperture]);
 
   useEffect(() => {
+    setVisualEffectsAvailable(
+      typeof CSS !== "undefined"
+      && CSS.supports("filter", "blur(1px)")
+      && CSS.supports("mask-image", "url(\"/images/window-light-portrait-subject.svg\")"),
+    );
     const saved = readSaved();
     if (saved.lessonThreeSettings && typeof saved.lessonThreeSettings === "object") {
       const savedSettings = saved.lessonThreeSettings as Partial<ExposureSettings>;
@@ -61,7 +67,7 @@ export function LessonThree({ explanation }: { explanation: React.ReactNode }) {
     setFeedback(null);
   }
 
-  return <>
+  return <div className={visualEffectsAvailable ? undefined : "no-visual-effects"}>
     <section className="lesson-explanation" aria-label="Explanation">{explanation}</section>
     <section className="experiment" aria-labelledby="aperture-experiment-title">
       <div className="experiment-heading"><div><p className="eyebrow">Guided experiment</p><h2 id="aperture-experiment-title">Open the lens, soften the room</h2></div><p>Only aperture changes here, so both Captured Light and relative depth change together.</p></div>
@@ -90,8 +96,8 @@ export function LessonThree({ explanation }: { explanation: React.ReactNode }) {
       {feedback && <div className="feedback portrait-feedback" aria-live="polite"><p className="eyebrow">Criterion Status</p><h3>{complete ? "Challenge complete" : "Keep experimenting"}</h3><div className="criteria">{([["Usable exposure", feedback.exposure], ["Intended depth of field", feedback.depth]] as const).map(([label, criterion]) => <article key={label}><h4>{label}</h4><strong className={`status status-${criterion.status.toLowerCase()}`}>{criterion.status}</strong><p>{criterion.explanation}</p></article>)}</div><p><strong>Tradeoff Feedback:</strong> Aperture changed both Captured Light and relative depth; shutter speed or ISO can rebalance brightness without recreating the same depth effect.</p>{previousAttempt && <button className="button secondary-button" onClick={() => setComparing((value) => !value)}>Compare with previous Attempt</button>}{comparing && previousAttempt && currentAttempt && <p className="comparison">Previous Attempt: f/{previousAttempt.aperture} · 1/{previousAttempt.shutter}s · ISO {previousAttempt.iso} · Current Attempt: f/{currentAttempt.aperture} · 1/{currentAttempt.shutter}s · ISO {currentAttempt.iso}</p>}</div>}
     </section>
     <details className="sources"><summary>Sources and further reading</summary><ul>{lessonThree.sources.map((source) => <li key={source.url}><a href={source.url}>{source.title}</a> — {source.publisher}</li>)}</ul></details>
-    <p className="photo-credit">Source Photograph: Andrey Maximov · <a href="https://commons.wikimedia.org/wiki/File:Portrait_at_the_window.jpg">CC BY 2.0</a> · resized and layered for relative depth demonstration</p>
-  </>;
+    <p className="photo-credit">Source Photograph: <a href="https://commons.wikimedia.org/wiki/File:Portrait_at_the_window.jpg">Andrey Maximov</a> · <a href="https://creativecommons.org/licenses/by/2.0/">CC BY 2.0</a> · resized and layered for relative depth demonstration</p>
+  </div>;
 }
 
 function PortraitPreview({ aperture, depth, label, exposure = 0 }: { aperture: number; depth: ReturnType<typeof portraitDepth>; label: string; exposure?: number }) {

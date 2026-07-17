@@ -179,7 +179,7 @@ function validateLessonThree() {
   const validScene = windowLightPortraitScene.sourceAsset.endsWith(".jpg") && windowLightPortraitScene.depthAssets.subjectMask.endsWith(".svg") && windowLightPortraitScene.assumptions.focalLengthMm > 0 && windowLightPortraitScene.assumptions.focusDistanceM > 0 && windowLightPortraitScene.calibration.representativeApertures.length >= 3;
   const assetRecord = imageManifest.windowLightPortrait;
   const validAssets = assetRecord.file === windowLightPortraitScene.sourceAsset && assetRecord.depthAssets.some(({ file }) => file === windowLightPortraitScene.depthAssets.subjectMask) && assetRecord.photographer.trim() && assetRecord.sourceUrl.startsWith("https://") && assetRecord.licenseUrl.startsWith("https://");
-  if (!manifestSlugs.has(lessonThreeChallenge.lessonSlug) || lessonThreeChallenge.sceneId !== windowLightPortraitScene.id || sourceUrls.size < 2 || sourceUrls.size !== lessonThree.sources.length || criterionIds.size !== 2 || !validSources || !validCriteria || !validScene || !validAssets) {
+  if (!manifestSlugs.has(lessonThreeChallenge.lessonSlug) || lessonThreeChallenge.sceneId !== windowLightPortraitScene.id || sourceUrls.size < 3 || sourceUrls.size !== lessonThree.sources.length || criterionIds.size !== 2 || !validSources || !validCriteria || !validScene || !validAssets) {
     throw new Error("Lesson 3 curriculum, Challenge, and calibrated depth assets must be complete.");
   }
 }

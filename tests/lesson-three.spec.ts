@@ -52,6 +52,9 @@ test("portrait Challenges grade exposure and depth independently and accept mult
 });
 
 test("portrait controls support keyboard operation, touch sizing, and text fallback", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(CSS, "supports", { configurable: true, value: () => false });
+  });
   await page.goto("/lessons/aperture-and-depth-of-field");
   const aperture = page.getByLabel("Guided aperture");
   await aperture.focus();
@@ -63,7 +66,6 @@ test("portrait controls support keyboard operation, touch sizing, and text fallb
   await page.keyboard.press("Enter");
   await expect(page.getByText("Criterion Status")).toBeVisible();
 
-  await page.evaluate(() => document.documentElement.classList.add("no-visual-effects"));
   await expect(page.getByText(/visual depth effect is unavailable/i).first()).toBeVisible();
   await expect(page.getByText(/background is strongly softened/i).first()).toBeVisible();
 });
