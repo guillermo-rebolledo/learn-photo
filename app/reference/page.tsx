@@ -1,5 +1,28 @@
 import Link from "next/link";
+import { lessonOne, lessonTwo } from "@/lib/curriculum";
+import { beginnerScale, cameraScale, formatShutter } from "@/lib/exposure-scales";
+
+function ScaleTable({ name, scale }: { name: string; scale: typeof beginnerScale | typeof cameraScale }) {
+  return <table aria-label={name} className="scale-table">
+    <thead><tr><th scope="col">Control</th><th scope="col">Values</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">Aperture</th><td>{scale.aperture.map((value) => `f/${value}`).join(" · ")}</td></tr>
+      <tr><th scope="row">Shutter speed</th><td>{scale.shutter.map(formatShutter).join(" · ")}</td></tr>
+      <tr><th scope="row">ISO</th><td>{scale.iso.join(" · ")}</td></tr>
+    </tbody>
+  </table>;
+}
 
 export default function ReferencePage() {
-  return <main id="main" className="simple-page"><p className="eyebrow">Reference · Preview</p><h1>Clear definitions, close at hand.</h1><p className="lede">Stops, exposure modes, and film differences will live here as a quick learner-facing Reference. The collection is still being prepared.</p><Link className="text-link" href="/">Return to Learn →</Link></main>;
+  const sources = [...lessonOne.sources, ...lessonTwo.sources];
+  return <main id="main" className="simple-page reference-page">
+    <p className="eyebrow">Reference</p>
+    <h1>Exposure Stops</h1>
+    <p className="lede">A Stop is a doubling or halving. Equivalent exposures balance opposite Stop changes while aperture, shutter speed, and digital ISO retain different physical and visual consequences.</p>
+    <section aria-labelledby="stop-relationships"><h2 id="stop-relationships">Stop and equivalence table</h2><table aria-label="Full-stop relationships" className="scale-table"><thead><tr><th scope="col">Change</th><th scope="col">Captured Light</th><th scope="col">Rendered Brightness</th><th scope="col">Distinct tradeoff</th></tr></thead><tbody><tr><th scope="row">f/4 → f/5.6</th><td>Halved</td><td>One Stop darker</td><td>Wider depth of field</td></tr><tr><th scope="row">1/125s → 1/60s</th><td>Doubled</td><td>One Stop brighter</td><td>More motion may show</td></tr><tr><th scope="row">ISO 400 → 800</th><td>Unchanged</td><td>One Stop brighter</td><td>Noise may be more visible</td></tr><tr><th scope="row">f/4 at 1/125s → f/5.6 at 1/60s</th><td>Balanced changes</td><td>Equivalent</td><td>Depth and motion differ</td></tr></tbody></table></section>
+    <section aria-labelledby="beginner-scale"><h2 id="beginner-scale">Beginner Scale</h2><p>Full stops make the doubling and halving relationship easy to see.</p><ScaleTable name="Beginner Scale full-stop values" scale={beginnerScale} /></section>
+    <section aria-labelledby="camera-scale"><h2 id="camera-scale">Camera Scale</h2><p>Third stops provide the finer increments commonly offered by cameras.</p><ScaleTable name="Camera Scale third-stop values" scale={cameraScale} /></section>
+    <section aria-labelledby="curriculum-sources"><h2 id="curriculum-sources">Curriculum Sources</h2><ul>{sources.map((source) => <li key={source.url}><a href={source.url}>{source.title}</a> — {source.publisher}</li>)}</ul></section>
+    <Link className="text-link" href="/">Return to Learn →</Link>
+  </main>;
 }
