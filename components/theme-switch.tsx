@@ -12,6 +12,9 @@ export function ThemeSwitch() {
   useEffect(() => {
     setTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light");
     setHydrated(true);
+    const handleReset = (event: Event) => setTheme((event as CustomEvent<Theme>).detail);
+    window.addEventListener("learn-photo-theme-reset", handleReset);
+    return () => window.removeEventListener("learn-photo-theme-reset", handleReset);
   }, []);
 
   function updateTheme(isDark: boolean) {

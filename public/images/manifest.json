@@ -1,10 +1,16 @@
 {
   "neutralStillLife": {
-    "file": "neutral-still-life.jpg",
+    "file": "neutral-still-life-960.jpg",
+    "derivatives": [
+      { "file": "neutral-still-life-480.jpg", "maxDimension": 480 },
+      { "file": "neutral-still-life-960.jpg", "maxDimension": 960 }
+    ],
     "photographer": "Ruth Hartnup",
     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Still_life_-_various_objects_on_table.jpg",
     "license": "CC BY 2.0",
     "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
-    "downloadDate": "2026-07-17"
+    "downloadDate": "2026-07-17",
+    "licenseVerifiedDate": "2026-07-17",
+    "modifications": "Resized and JPEG-optimized local derivatives for responsive web display."
   }
 }

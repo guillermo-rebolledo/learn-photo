@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ExposurePreview } from "@/components/exposure-preview";
 import { lessons } from "@/lib/curriculum";
+import { ProgressLink } from "@/components/progress-link";
 
 export default function LearnPage() {
   return (
@@ -10,7 +11,7 @@ export default function LearnPage() {
           <p className="eyebrow">Exposure Fundamentals · 8 short Lessons</p>
           <h1 id="hero-title">Learn to shape light, not chase settings.</h1>
           <p className="hero-intro">Understand what aperture, shutter speed, and ISO do to a photograph through calm explanations and guided practice.</p>
-          <Link className="button primary-button" href="/lessons/light-and-exposure">Start learning <span aria-hidden="true">→</span></Link>
+          <ProgressLink className="button primary-button">Start learning <span aria-hidden="true">→</span></ProgressLink>
           <p className="reassurance">Free. No account. Every Lesson stays open.</p>
         </div>
         <ExposurePreview />

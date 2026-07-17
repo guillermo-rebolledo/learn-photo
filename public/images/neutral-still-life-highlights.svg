@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 1346">
+  <defs><filter id="soft"><feGaussianBlur stdDeviation="42"/></filter></defs>
+  <g fill="white" filter="url(#soft)">
+    <ellipse cx="610" cy="430" rx="180" ry="260"/>
+    <ellipse cx="430" cy="800" rx="230" ry="150" opacity=".72"/>
+  </g>
+</svg>
