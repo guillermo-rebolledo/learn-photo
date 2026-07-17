@@ -12,11 +12,27 @@ export type CurriculumSource = {
   url: `https://${string}`;
 };
 
+type SuccessCriterion = {
+  id: string;
+  label: string;
+  essential: boolean;
+  feedback: { achieved: string; close: string; missed: string };
+};
+
 export const lessonOne = {
   slug: "light-and-exposure",
   sources: [
     { title: "Understanding ISO sensitivity", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/c/tips-and-techniques/understanding-iso-sensitivity" },
     { title: "Exposure", publisher: "Cambridge in Colour", url: "https://www.cambridgeincolour.com/tutorials/camera-exposure.htm" },
+  ] satisfies CurriculumSource[],
+} as const;
+
+export const lessonTwo = {
+  slug: "stops-and-equivalent-exposures",
+  sources: [
+    { title: "Understanding shutter speed", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/c/tips-and-techniques/understanding-shutter-speed" },
+    { title: "Understanding maximum aperture", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/c/tips-and-techniques/understanding-maximum-aperture" },
+    { title: "ISO speed and exposure", publisher: "Canon", url: "https://www.canon-europe.com/pro/infobank/iso/" },
   ] satisfies CurriculumSource[],
 } as const;
 
@@ -31,6 +47,25 @@ export const neutralStillLifeScene = {
     closeWithinStops: 1.1,
     rendering: { minBrightness: 0.28, maxBrightness: 2.3, maxHighlightOpacity: 0.72, highlightOpacityPerStop: 0.36 },
   },
+} as const;
+
+export const lessonTwoChallenge = {
+  id: "equivalent-still-life",
+  lessonSlug: lessonTwo.slug,
+  sceneId: neutralStillLifeScene.id,
+  referenceSettings: { aperture: 4, shutter: 125, iso: 400 },
+  equivalentWithinStops: 0.12,
+  photographicIntention: "Preserve the reference brightness with a different settings combination.",
+  successCriteria: [{
+    id: "equivalent-brightness",
+    label: "Equivalent brightness",
+    essential: true,
+    feedback: {
+      achieved: "The opposite Stop changes preserve the reference brightness.",
+      close: "The result is close to the reference; one smaller opposite adjustment can balance it.",
+      missed: "The changes do not balance yet; offset brighter Stops with darker Stops.",
+    },
+  }] satisfies SuccessCriterion[],
 } as const;
 
 export const lessonOneCriteria = {
@@ -72,6 +107,18 @@ function validateLessonOne() {
   }
 }
 
+function validateLessonTwo() {
+  const sourceUrls = new Set(lessonTwo.sources.map(({ url }) => url));
+  const manifestSlugs = new Set(lessons.map(({ slug }) => slug));
+  if (lessonTwo.sources.length < 2 || sourceUrls.size !== lessonTwo.sources.length || lessonTwo.sources.some((source) => !source.title.trim() || !source.publisher.trim() || !source.url.startsWith("https://"))) {
+    throw new Error("Lesson 2 requires at least two secure Curriculum Sources.");
+  }
+  const criterionIds = new Set(lessonTwoChallenge.successCriteria.map(({ id }) => id));
+  if (!manifestSlugs.has(lessonTwoChallenge.lessonSlug) || lessonTwoChallenge.sceneId !== neutralStillLifeScene.id || criterionIds.size !== lessonTwoChallenge.successCriteria.length || lessonTwoChallenge.successCriteria.some(({ feedback }) => Object.values(feedback).some((text) => !text.trim()))) {
+    throw new Error("Lesson 2 Challenge relationships are inconsistent.");
+  }
+}
+
 function defineLearningPath<const T extends readonly Lesson[]>(items: T): T {
   const slugs = new Set(items.map(({ slug }) => slug));
   const numbers = new Set(items.map(({ number }) => number));
@@ -93,3 +140,4 @@ export const lessons = defineLearningPath([
 ] as const);
 
 validateLessonOne();
+validateLessonTwo();

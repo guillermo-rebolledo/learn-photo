@@ -4,6 +4,8 @@ import { lessons } from "@/lib/curriculum";
 import { LessonOne } from "@/components/lesson-one";
 import LightAndExposureContent from "@/content/lessons/light-and-exposure.mdx";
 import { LessonPositionTracker } from "@/components/lesson-position-tracker";
+import { LessonTwo } from "@/components/lesson-two";
+import StopsAndEquivalentExposuresContent from "@/content/lessons/stops-and-equivalent-exposures.mdx";
 
 export function generateStaticParams() { return lessons.map(({ slug }) => ({ slug })); }
 
@@ -20,6 +22,8 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
       <p className="lede">{lesson.summary}</p>
       {lesson.number === "01" ? (
         <LessonOne explanation={<LightAndExposureContent />} />
+      ) : lesson.number === "02" ? (
+        <LessonTwo explanation={<StopsAndEquivalentExposuresContent />} />
       ) : <p className="status-note"><strong>Open, not locked.</strong> This Lesson’s learning content is being prepared.</p>}
       <Link className="text-link" href="/">← Back to the Learning Path</Link>
     </main>
