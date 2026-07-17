@@ -1,0 +1,3 @@
+# Protect Web Vitals and the animation frame budget
+
+The MVP must meet the “good” Core Web Vitals thresholds at the 75th percentile—LCP at or below 2.5 seconds, INP at or below 200 milliseconds, and CLS at or below 0.1—and should pursue excellent rather than contractually perfect lab scores. Interaction and motion must stay within a 16.7ms frame budget on the reference 60Hz mobile device and naturally follow higher-refresh displays; only the active scene loads eagerly, expensive photographic refinement yields to input, and lower-resolution previews may render during manipulation before settling to full quality.

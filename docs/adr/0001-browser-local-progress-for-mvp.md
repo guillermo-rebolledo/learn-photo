@@ -1,0 +1,3 @@
+# Keep MVP progress browser-local
+
+The MVP will require no account or sign-in and will store Progress only in the learner's browser, prioritizing immediate, private access over cross-device continuity. It will persist completion, current lesson position, the last unfinished Challenge settings, scale preference, and theme preference; only the immediately previous Attempt is retained for comparison, with no history, streaks, time tracking, statistics, or hidden backup. Progress may be lost when browser data is cleared and will not follow the learner to another device, and a single reset action clears all learning state; persistent identity and synchronization are intentionally deferred until there is evidence they are valuable.

@@ -1,0 +1,3 @@
+# Build a static Next.js app with custom simulator controls
+
+The MVP will use Next.js App Router, React, and TypeScript with static export, keeping Progress in the browser and requiring no application server or database. Standard interface primitives will start from shadcn with Base UI and be restyled to the Learn Photo design system, while camera-specific controls such as exposure dials, the meter, histogram, viewfinder, and comparison slider will be dedicated accessible components. Motion will prefer CSS transitions and the Web Animations API, photographic effects may use layered images, masks, or 2D canvas, and no 3D library will be added unless a later validated interaction cannot be served by those tools.
