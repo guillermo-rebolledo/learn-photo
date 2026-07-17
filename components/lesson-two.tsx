@@ -11,19 +11,24 @@ type Feedback = { status: "Achieved" | "Close" | "Missed"; message: string; trad
 const storageKey = "learn-photo-progress";
 const defaultSettings: ExposureSettings = { ...lessonTwoChallenge.referenceSettings };
 
-function readSaved() {
+function readSavedRecord(): Record<string, unknown> {
   try {
-    const saved = JSON.parse(localStorage.getItem(storageKey) ?? "{}");
-    return {
-      scale: (saved.scale === "camera" ? "camera" : "beginner") as Scale,
-      settings: { ...defaultSettings, ...saved.lessonTwoSettings } as ExposureSettings,
-      currentAttempt: (saved.lessonTwoCurrentAttempt ?? null) as Attempt | null,
-      previousAttempt: (saved.lessonTwoPreviousAttempt ?? null) as Attempt | null,
-      completed: Boolean(saved.completedChallenges?.includes(lessonTwoChallenge.id)),
-    };
+    const saved: unknown = JSON.parse(localStorage.getItem(storageKey) ?? "{}");
+    return saved && typeof saved === "object" && !Array.isArray(saved) ? saved as Record<string, unknown> : {};
   } catch {
-    return { scale: "beginner" as Scale, settings: defaultSettings, currentAttempt: null, previousAttempt: null, completed: false };
+    return {};
   }
+}
+
+function readSaved() {
+  const saved = readSavedRecord();
+  return {
+    scale: (saved.scale === "camera" ? "camera" : "beginner") as Scale,
+    settings: { ...defaultSettings, ...(saved.lessonTwoSettings && typeof saved.lessonTwoSettings === "object" ? saved.lessonTwoSettings : {}) } as ExposureSettings,
+    currentAttempt: (saved.lessonTwoCurrentAttempt ?? null) as Attempt | null,
+    previousAttempt: (saved.lessonTwoPreviousAttempt ?? null) as Attempt | null,
+    completed: Array.isArray(saved.completedChallenges) && saved.completedChallenges.includes(lessonTwoChallenge.id),
+  };
 }
 
 function tradeoffFor(settings: ExposureSettings) {
@@ -61,8 +66,8 @@ export function LessonTwo({ explanation }: { explanation: React.ReactNode }) {
 
   useEffect(() => {
     if (!hydrated) return;
-    const saved = JSON.parse(localStorage.getItem(storageKey) ?? "{}");
-    const completedChallenges = new Set<string>(saved.completedChallenges ?? []);
+    const saved = readSavedRecord();
+    const completedChallenges = new Set<string>(Array.isArray(saved.completedChallenges) ? saved.completedChallenges.filter((value): value is string => typeof value === "string") : []);
     if (completed) completedChallenges.add(lessonTwoChallenge.id);
     localStorage.setItem(storageKey, JSON.stringify({ ...saved, lesson: lessonTwo.slug, scale, lessonTwoSettings: settings, lessonTwoCurrentAttempt: currentAttempt, lessonTwoPreviousAttempt: previousAttempt, completedChallenges: [...completedChallenges] }));
   }, [completed, currentAttempt, hydrated, previousAttempt, scale, settings]);

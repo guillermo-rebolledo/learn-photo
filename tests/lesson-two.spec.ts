@@ -41,6 +41,20 @@ test("accessible adjustment announces stop changes and Camera Scale persists", a
   await expect(page.getByLabel("Challenge ISO")).toHaveValue("100");
 });
 
+test("malformed browser-local Progress recovers and remains writable", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => localStorage.setItem("learn-photo-progress", "not json"));
+  await page.goto("/lessons/stops-and-equivalent-exposures");
+
+  await page.getByLabel("Control scale").selectOption("camera");
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("learn-photo-progress") ?? "null")?.scale)).toBe("camera");
+
+  await page.evaluate(() => localStorage.setItem("learn-photo-progress", JSON.stringify({ completedChallenges: "invalid" })));
+  await page.getByLabel("Challenge ISO").selectOption("800");
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("learn-photo-progress") ?? "null")?.lessonTwoSettings?.iso)).toBe(800);
+  await expect(page.evaluate(() => JSON.parse(localStorage.getItem("learn-photo-progress") ?? "null")?.completedChallenges)).resolves.toEqual([]);
+});
+
 test("Reference exposes stop and scale tables with Curriculum Sources", async ({ page }) => {
   await page.goto("/reference");
 
