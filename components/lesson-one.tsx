@@ -80,6 +80,7 @@ export function LessonOne({ explanation }: { explanation: React.ReactNode }) {
 
   const rendered = useMemo(() => renderExposure(progress.settings), [progress.settings]);
   const feedback = progress.currentAttempt ? evaluateAttempt(progress.currentAttempt) : null;
+  const currentAttemptComplete = feedback && Object.values(feedback).every(({ status }) => status === "Achieved");
 
   function updateSetting(name: keyof ExposureSettings, value: string) {
     setProgress((current) => ({ ...current, lessonPosition: "experiment", settings: { ...current.settings, [name]: Number(value) } }));
@@ -169,7 +170,7 @@ export function LessonOne({ explanation }: { explanation: React.ReactNode }) {
               <article key={name}><h3>{name}</h3><strong className={`status status-${criterion.status.toLowerCase()}`}>{criterion.status}</strong><p>{criterion.explanation}</p></article>
             ))}
           </div>
-          {progress.completed && <p className="completion"><strong>Lesson complete</strong> — you achieved every essential Success Criterion.</p>}
+          {currentAttemptComplete && <p className="completion"><strong>Lesson complete</strong> — you achieved every essential Success Criterion.</p>}
           {progress.previousAttempt && <button className="button secondary-button" onClick={() => setComparing((value) => !value)}>Compare with previous Attempt</button>}
           {comparing && progress.previousAttempt && <p className="comparison">Previous Attempt: {settingLabel(progress.previousAttempt)} · Current Attempt: {settingLabel(progress.currentAttempt!)}</p>}
         </section>

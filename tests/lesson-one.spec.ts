@@ -24,6 +24,18 @@ test("learner completes the first Learning Loop and compares a retry", async ({ 
   await expect(page.getByText("Lesson complete")).toBeVisible();
 });
 
+test("Lesson complete only describes the current successful Attempt", async ({ page }) => {
+  await page.goto("/lessons/light-and-exposure");
+  await page.getByRole("button", { name: "Take photo" }).click();
+  await expect(page.getByText("Lesson complete")).toBeVisible();
+
+  await page.getByLabel("Shutter speed").selectOption("250");
+  await page.getByRole("button", { name: "Take photo" }).click();
+
+  await expect(page.getByText("Missed", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Lesson complete")).toHaveCount(0);
+});
+
 test("unfinished settings restore and Reset progress clears learning state", async ({ page }) => {
   await page.goto("/lessons/light-and-exposure");
   await page.evaluate(() => localStorage.setItem("learn-photo-theme", "dark"));
