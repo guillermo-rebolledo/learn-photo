@@ -36,7 +36,7 @@ export function LessonFour({ explanation }: { explanation: React.ReactNode }) {
   const complete = feedback && Object.values(feedback).every(({ status }) => status === "Achieved");
 
   useEffect(() => {
-    setVisualEffectsAvailable(typeof CSS !== "undefined" && CSS.supports("filter", "blur(1px)") && CSS.supports("mix-blend-mode", "screen"));
+    setVisualEffectsAvailable(typeof CSS !== "undefined" && CSS.supports("filter", "blur(1px)") && CSS.supports("mask-image", "url(\"/images/moving-cyclist-subject.svg\")"));
     const saved = readSaved();
     if (saved.lessonFourSettings && typeof saved.lessonFourSettings === "object") setSettings((current) => ({ ...current, ...saved.lessonFourSettings as Partial<ExposureSettings> }));
     if (saved.lessonFourIntention === "express-motion") setIntention("express-motion");
@@ -97,7 +97,7 @@ export function LessonFour({ explanation }: { explanation: React.ReactNode }) {
       </div>
       {feedback && <div className="portrait-feedback" aria-live="polite"><p className="eyebrow">Criterion Status</p><h2>{complete ? "Challenge complete" : "Review the tradeoffs"}</h2><div className="criteria"><Criterion label="Usable exposure" value={feedback.exposure} /><Criterion label="Intended motion rendering" value={feedback.motion} /></div><p><strong>Tradeoff Feedback:</strong> Shutter speed changes both Captured Light and recorded travel. Aperture or ISO can rebalance Rendered Brightness without recreating the same motion effect.</p>{previousAttempt && <button className="button secondary-button" onClick={() => setComparing((value) => !value)}>Compare with previous Attempt</button>}{comparing && previousAttempt && currentAttempt && <p className="comparison">Previous Attempt: f/{previousAttempt.aperture} · 1/{previousAttempt.shutter}s · ISO {previousAttempt.iso} · Current Attempt: f/{currentAttempt.aperture} · 1/{currentAttempt.shutter}s · ISO {currentAttempt.iso}</p>}</div>}
     </section>
-    <aside className="photo-credit"><p><strong>Source Photograph:</strong> “cyclist riding bicycle on road” by <a href="https://unsplash.com/@miqul">Michal Mrozek</a>, used under the <a href="https://unsplash.com/license">Unsplash License</a>. Local derivatives and the directional motion overlay are documented in the image manifest.</p></aside>
+    <aside className="photo-credit"><p><strong>Source Photograph:</strong> “cyclist riding bicycle on road” by <a href="https://unsplash.com/@miqul">Michal Mrozek</a>, used under the <a href="https://unsplash.com/license">Unsplash License</a>. Local derivatives and the source-derived cyclist mask are documented in the image manifest.</p></aside>
     <details className="sources"><summary>Sources and further reading</summary><ul>{lessonFour.sources.map((source) => <li key={source.url}><a href={source.url}>{source.title}</a> — {source.publisher}</li>)}</ul></details>
   </div>;
 }
@@ -110,8 +110,8 @@ function capturedLightText(stops: number) {
 function CyclistPreview({ shutter, motion, label, exposure = 0, capturing = false }: { shutter: number; motion: ReturnType<typeof cyclistMotion>; label: string; exposure?: number; capturing?: boolean }) {
   const copies = motion.band === "flowing" ? 3 : motion.band === "trace" ? 1 : 0;
   return <figure className="lesson-preview cyclist-preview" data-testid="cyclist-rendered-result" data-motion-band={motion.band} aria-label={`Rendered Result: ${label}. ${motion.description}`}>
-    <div className="lesson-preview-frame"><Image src="/images/moving-cyclist-960.jpg" alt="Cyclist riding along a road" fill sizes="(max-width: 760px) 100vw, 65vw" style={{ filter: `brightness(${Math.max(.35, Math.min(1.8, 2 ** exposure))})` }} />
-      {Array.from({ length: copies }, (_, index) => <Image className="cyclist-trace" key={index} src="/images/moving-cyclist-trace.svg" alt="" aria-hidden fill style={{ opacity: .22 + index * .1, transform: `translateX(${-motion.offset * (index + 1)}px)` }} />)}
+    <div className="lesson-preview-frame"><Image src="/images/moving-cyclist-960.jpg" alt="Cyclist riding along a road" fill loading="eager" sizes="(max-width: 760px) 100vw, 65vw" style={{ filter: `brightness(${Math.max(.35, Math.min(1.8, 2 ** exposure))})` }} />
+      {Array.from({ length: copies }, (_, index) => <Image className="cyclist-motion-echo" data-testid="cyclist-motion-echo" key={index} src="/images/moving-cyclist-960.jpg" alt="" aria-hidden fill sizes="(max-width: 760px) 100vw, 65vw" style={{ opacity: motion.band === "flowing" ? .2 - index * .045 : .16, transform: `translateX(${-motion.offset * (index + 1)}px)`, filter: `brightness(${Math.max(.35, Math.min(1.8, 2 ** exposure))}) blur(${motion.band === "flowing" ? 4 + index * 2 : 2.5}px)` }} />)}
       {capturing && <span className="shutter-curtain" data-testid="shutter-curtain" aria-hidden />}
     </div><figcaption><span>{label}</span><span>{motion.description}</span><span className="visual-fallback"> Visual motion effect is unavailable; the textual result remains authoritative.</span></figcaption>
   </figure>;

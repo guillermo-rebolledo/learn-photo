@@ -25,8 +25,10 @@ test("learner changes shutter speed and receives synchronized directional motion
   await expect(page.getByRole("heading", { name: "Shutter speed shapes time" })).toBeVisible();
   const preview = page.getByRole("region", { name: "Hold a moment or let it travel" }).getByTestId("cyclist-rendered-result");
   await expect(preview).toHaveAttribute("data-motion-band", "trace");
+  await expect(preview.getByTestId("cyclist-motion-echo")).toHaveCount(1);
   await page.getByLabel("Guided shutter speed", { exact: true }).selectOption("30");
   await expect(preview).toHaveAttribute("data-motion-band", "flowing");
+  await expect(preview.getByTestId("cyclist-motion-echo")).toHaveCount(3);
   await expect(page.getByText(/directional trail follows the cyclist/i).first()).toBeVisible();
   await page.getByText("Why this varies in real life").click();
   await expect(page.getByText(/panning direction/i)).toBeVisible();

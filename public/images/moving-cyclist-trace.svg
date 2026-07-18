@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 641" role="img" aria-label="Calibrated directional motion traces">
-  <g fill="none" stroke="white" stroke-linecap="round" opacity=".36">
-    <path stroke-width="8" d="M175 292h205M130 330h225M210 372h175"/>
-    <path stroke-width="5" d="M535 246h120M565 279h145M520 405h170"/>
-    <path stroke-width="3" d="M90 430h310M480 455h255"/>
-  </g>
-</svg>

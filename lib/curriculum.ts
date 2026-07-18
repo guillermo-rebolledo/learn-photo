@@ -84,7 +84,7 @@ export const lessonFour = {
 export const movingCyclistScene = {
   id: "moving-cyclist",
   sourceAsset: "moving-cyclist-960.jpg",
-  motionAssets: [{ file: "moving-cyclist-trace.svg", role: "calibrated directional motion overlay" }],
+  motionAssets: [{ file: "moving-cyclist-subject.svg", role: "source-derived cyclist mask for calibrated directional motion echoes" }],
   assumptions: { focalLengthMm: 85, stability: "stable support", subjectMotion: "cyclist crossing left to right at a steady pace", panning: "Camera remains fixed" },
   meterReference: { aperture: 5.6, shutter: 125, iso: 400 },
   calibration: { motion: { frozenFrom: 500, flowingThrough: 60, offsets: { frozen: 0, trace: 8, flowing: 20 }, representativeShutters: [30, 125, 1000] }, exposure: { achievedWithinStops: 0.4, closeWithinStops: 1.1 } },
