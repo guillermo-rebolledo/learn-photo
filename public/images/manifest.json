@@ -43,5 +43,20 @@
     "downloadDate": "2026-07-18",
     "licenseVerifiedDate": "2026-07-18",
     "modifications": "Resized local derivatives; scene-specific motion mask and calibrated deterministic monochrome grain tile added for the Conceptual Simulator."
+  },
+  "movingCyclist": {
+    "file": "moving-cyclist-960.jpg",
+    "derivatives": [
+      { "file": "moving-cyclist-480.jpg", "maxDimension": 480 },
+      { "file": "moving-cyclist-960.jpg", "maxDimension": 960 }
+    ],
+    "motionAssets": [{ "file": "moving-cyclist-subject.svg", "role": "source-derived cyclist mask for calibrated directional motion echoes" }],
+    "photographer": "Michal Mrozek",
+    "sourceUrl": "https://unsplash.com/photos/cyclist-riding-bicycle-on-road-qbdlII8L6zc",
+    "license": "Unsplash License",
+    "licenseUrl": "https://unsplash.com/license",
+    "downloadDate": "2026-07-17",
+    "licenseVerifiedDate": "2026-07-17",
+    "modifications": "Resized and JPEG-optimized local derivatives; source-derived cyclist mask added for deterministic blurred motion echoes."
   }
 }
