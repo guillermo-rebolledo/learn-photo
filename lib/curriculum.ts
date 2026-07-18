@@ -64,6 +64,34 @@ export const lessonThree = {
   ] satisfies CurriculumSource[],
 } as const satisfies LessonDefinition;
 
+export const lessonFive = {
+  slug: "iso-and-image-quality",
+  sources: [
+    { title: "Understanding ISO sensitivity", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/c/tips-and-techniques/understanding-iso-sensitivity" },
+    { title: "ISO speed and exposure", publisher: "Canon", url: "https://www.canon-europe.com/pro/infobank/iso/" },
+    { title: "Digital camera noise", publisher: "Cambridge in Colour", url: "https://www.cambridgeincolour.com/tutorials/image-noise.htm" },
+  ] satisfies CurriculumSource[],
+} as const satisfies LessonDefinition;
+
+export const dimIndoorPerformanceScene = {
+  id: "dim-indoor-performance",
+  sourceAsset: "dim-indoor-performance-960.jpg",
+  assumptions: { format: "full frame", focalLengthMm: 85, stability: "handheld", subjectMotion: "energetic performer" },
+  meterReference: { aperture: 1.8, shutter: 250, iso: 800 },
+  calibration: { noise: [{ iso: 100, opacity: 0 }, { iso: 800, opacity: 0.08 }, { iso: 3200, opacity: 0.17 }, { iso: 12800, opacity: 0.26 }], motionSafeShutter: 250 },
+} as const;
+
+export const lessonFiveChallenge = {
+  id: "dim-performance-tradeoffs",
+  lessonSlug: lessonFive.slug,
+  sceneId: dimIndoorPerformanceScene.id,
+  successCriteria: [
+    { id: "usable-exposure", label: "Usable exposure", essential: true },
+    { id: "intended-motion", label: "Intended motion", essential: true },
+    { id: "iso-compatible-quality", label: "ISO-compatible image quality", essential: true },
+  ],
+} as const;
+
 export const windowLightPortraitScene = {
   id: "window-light-portrait",
   sourceAsset: "window-light-portrait-960.jpg",
@@ -184,6 +212,14 @@ function validateLessonThree() {
   }
 }
 
+function validateLessonFive() {
+  const asset = imageManifest.dimIndoorPerformance;
+  const sourceUrls = new Set(lessonFive.sources.map(({ url }) => url));
+  if (!lessons.some(({ slug }) => slug === lessonFive.slug) || lessonFiveChallenge.sceneId !== dimIndoorPerformanceScene.id || sourceUrls.size < 3 || asset.file !== dimIndoorPerformanceScene.sourceAsset || !asset.photographer.trim() || !asset.sourceUrl.startsWith("https://") || !asset.licenseUrl.startsWith("https://") || asset.noiseAssets.length === 0 || dimIndoorPerformanceScene.calibration.noise.some(({ iso, opacity }) => iso <= 0 || opacity < 0)) {
+    throw new Error("Lesson 5 curriculum, provenance, and calibrated noise assets must be complete.");
+  }
+}
+
 function defineLearningPath<const T extends readonly Lesson[]>(items: T): T {
   const slugs = new Set(items.map(({ slug }) => slug));
   const numbers = new Set(items.map(({ number }) => number));
@@ -207,3 +243,4 @@ export const lessons = defineLearningPath([
 validateLessonOne();
 validateLessonTwo();
 validateLessonThree();
+validateLessonFive();

@@ -90,6 +90,14 @@ h1 { max-width: 12ch; margin: 0; font-size: clamp(3rem, 6vw, 5.5rem); font-weigh
 .no-visual-effects .portrait-subject { display: none; }
 .no-visual-effects .visual-fallback { display: inline; }
 .portrait-feedback { margin-top: 1.5rem; }
+.performance-preview img { will-change: filter; }
+.performance-motion-layer { mask: url("/images/dim-indoor-performance-motion.svg") center / cover no-repeat; }
+.noise-layer { position: absolute; inset: 0; pointer-events: none; background: url("/images/dim-indoor-performance-noise.svg") center / 144px 144px repeat; mix-blend-mode: screen; }
+.performance-fallback { display: none; }
+.no-performance-effects .noise-layer, .no-performance-effects .performance-motion-layer { display: none; }
+.no-performance-effects .performance-preview img { filter: none !important; transform: none !important; }
+.no-performance-effects .performance-fallback { display: inline; }
+.iso-criteria { grid-template-columns: repeat(3, 1fr); }
 
 .learning-path { width: min(100% - 2rem, 70rem); margin: 0 auto 7rem; }
 .section-heading { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; padding-bottom: 2rem; border-bottom: 1px solid var(--line); align-items: end; }
@@ -183,7 +191,7 @@ h1 { max-width: 12ch; margin: 0; font-size: clamp(3rem, 6vw, 5.5rem); font-weigh
   .lesson-arrow { grid-column: 3; grid-row: 1; }
   .lesson-body > span { font-size: .82rem; }
   .preview-frame { aspect-ratio: 1.05; }
-  .experiment-heading, .criteria { grid-template-columns: 1fr; }
+  .experiment-heading, .criteria, .iso-criteria { grid-template-columns: 1fr; }
   .camera-controls { grid-template-columns: 1fr; }
   .equivalent-controls, .stop-demo-controls { grid-template-columns: 1fr; }
   .capture-button { grid-column: auto; }
