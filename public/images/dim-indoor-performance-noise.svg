@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144">
+  <filter id="noise"><feTurbulence type="fractalNoise" baseFrequency=".82" numOctaves="4" seed="57"/><feColorMatrix type="saturate" values="0"/></filter>
+  <rect width="144" height="144" filter="url(#noise)" opacity=".9"/>
+</svg>
