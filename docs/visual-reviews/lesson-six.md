@@ -15,10 +15,10 @@ Additional scene extremes were reviewed at the intended offset:
 
 | Curated Scene | Exposure Control extreme | Review |
 | --- | --- | --- |
-| Bright Snow | f/5.6 and f/11 | Opposing shutter/ISO combinations preserve the same intended tonal result; the still-landscape assumption makes aperture depth and subject motion nonessential to this Challenge. |
-| Bright Snow | ISO 100 and ISO 400 | Equivalent combinations keep the pixel-derived Rendered Result and Histogram synchronized. |
-| Dark Stage | f/2 and f/5.6 | Equivalent settings preserve the intended tones, while the 200 mm handheld assumption remains visible beside the result. |
-| Dark Stage | ISO 400 and ISO 3200 | Equivalent settings keep tonal evaluation independent of a single settings combination. |
-| Dark Stage | 1/30s, 1/60s, and 1/125s | The independent performer-stability criterion moves from Missed to Close to Achieved, reflecting the moving singer and handheld 200 mm assumptions. |
+| Bright Snow | f/4 through f/11 | Opposing shutter combinations include several intended tonal results; the still-landscape assumption makes subject motion nonessential to this Challenge. |
+| Bright Snow | ISO 100 | The fixed ISO Scene Assumption is visible, so the scene does not imply a noise change it does not render. |
+| Dark Stage | f/2 and f/4 | Opposing 1/500s and 1/125s choices preserve the intended tones while remaining within the calibrated motion-safe range. |
+| Dark Stage | ISO 1600 | The fixed ISO Scene Assumption is visible, so the scene does not imply a noise change it does not render. |
+| Dark Stage | 1/125s and 1/500s | Both ends of the offered shutter range preserve the held performer under the explicit handheld 200 mm assumption. Slower, unrendered motion-risk settings are not offered. |
 
 The Source Photographs keep identical color rendering in both themes. Desktop keeps photograph, Histogram, and controls in one cause-and-effect surface; phone layout places them in that same order without horizontal overflow. Keyboard focus, 44 px controls, native select operation, non-color Criterion Status labels, meter names, the Histogram accessible name, live text summaries, and the visual-effects fallback were reviewed nonvisually. Reduced motion replaces the 220 ms shutter sweep with stationary dimming.

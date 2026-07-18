@@ -127,14 +127,9 @@ export function evaluateMeteringAttempt(sceneId: MeteringSceneId, settings: Expo
     ? "Achieved"
     : histogram.highlightClippedRatio <= detailCalibration.closeHighlightClippingThrough
       && histogram.shadowClippedRatio <= detailCalibration.closeShadowClippingThrough ? "Close" : "Missed";
-  const motionCalibration = meteringScenes[sceneId].calibration.motion;
-  const motionStatus: CriterionStatus = settings.shutter >= motionCalibration.achievedShutterFrom
-    ? "Achieved"
-    : settings.shutter >= motionCalibration.closeShutterFrom ? "Close" : "Missed";
   const criteria = {
     tones,
     detail: feedbackFor(detailStatus, meteringChallenges[sceneId].successCriteria[1].feedback),
-    motion: feedbackFor(motionStatus, meteringChallenges[sceneId].successCriteria[2].feedback),
   };
   return { complete: Object.values(criteria).every(({ status }) => status === "Achieved"), criteria };
 }

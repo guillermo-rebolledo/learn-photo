@@ -66,7 +66,7 @@ export function LessonSix({ explanation }: { explanation: React.ReactNode }) {
       </div>
     </section>
 
-    <details className="scene-assumptions"><summary>Scene Assumptions and graceful fallback</summary><p>Bright Snow assumes a still mountain landscape at 27 mm. Dark Stage assumes a handheld Camera at 200 mm and a moving singer under a spotlight. The Conceptual Simulator applies deterministic stops-based brightness to each Source Photograph. If that visual effect is unavailable, the meter, Histogram, textual summary, and Challenge evaluation remain active.</p></details>
+    <details className="scene-assumptions"><summary>Scene Assumptions and graceful fallback</summary><p>Bright Snow fixes ISO 100 for a still mountain landscape at 27 mm. Dark Stage fixes ISO 1600 and offers only its calibrated 1/125s-or-faster range for a handheld Camera at 200 mm. Those visible limits isolate metering decisions without pretending to render new noise or motion effects. The Conceptual Simulator transforms and clips the Source Photograph’s pixels deterministically. If canvas rendering is unavailable, the meter, Histogram, textual summary, and Challenge evaluation remain active.</p></details>
     <details className="sources"><summary>Sources and further reading</summary><ul>{lessonSix.sources.map((source) => <li key={source.url}><a href={source.url}>{source.title}</a> — {source.publisher}</li>)}</ul></details>
     <aside className="photo-credit"><p><strong>Source Photographs:</strong> “Khunjerab — the snowy landscape” by <a href="https://commons.wikimedia.org/wiki/File:Khunjerab_-_the_snowy_landscape.jpg">MaeraT</a>, and “Singer singing on stage” by <a href="https://commons.wikimedia.org/wiki/File:Singer_singing_on_stage.jpg">DonAdkinsPhoto</a>, both used under <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>. Local derivatives are documented in the image manifest.</p></aside>
   </div>;
@@ -109,7 +109,7 @@ function MeteringChallenge({ sceneId }: { sceneId: MeteringSceneId }) {
     <div className="camera-controls metering-controls">
       <label>{scene.name} aperture<select aria-label={`${scene.name} aperture`} value={settings.aperture} onChange={(event) => update("aperture", event.target.value)}>{controls.aperture.map((value) => <option key={value} value={value}>f/{value}</option>)}</select></label>
       <label>{scene.name} shutter speed<select aria-label={`${scene.name} shutter speed`} value={settings.shutter} onChange={(event) => update("shutter", event.target.value)}>{controls.shutter.map((value) => <option key={value} value={value}>1/{value}s</option>)}</select></label>
-      <label>{scene.name} ISO<select aria-label={`${scene.name} ISO`} value={settings.iso} onChange={(event) => update("iso", event.target.value)}>{controls.iso.map((value) => <option key={value} value={value}>ISO {value}</option>)}</select></label>
+      <div className="fixed-control"><span>{scene.name} ISO</span><strong>ISO {scene.assumptions.fixedIso} · fixed Scene Assumption</strong></div>
       <Meter offset={offset} />
       <button className="button primary-button capture-button" onClick={takePhoto}>Take {scene.name} photo</button>
     </div>
@@ -176,7 +176,7 @@ function MeteringPreview({ sceneId, settings, eager = false, capturing = false, 
       <div className="preview-readout"><span>{scene.name}</span><strong>f/{settings.aperture} · 1/{settings.shutter}s · ISO {settings.iso}</strong></div>
     </div>
     <Histogram histogram={histogram} summary={summary} />
-    <figcaption>{summary} <span className="metering-fallback">The visual brightness effect is unavailable; the synchronized meter, luminance Histogram, text, and evaluation remain authoritative.</span></figcaption>
+    <figcaption>{summary} <span className="metering-fallback">The visual canvas rendering is unavailable; the synchronized meter, luminance Histogram, text, and evaluation remain authoritative.</span></figcaption>
   </figure>;
 }
 
