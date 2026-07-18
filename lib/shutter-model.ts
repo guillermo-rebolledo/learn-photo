@@ -36,7 +36,15 @@ export function evaluateCyclistAttempt(settings: ExposureSettings, intention: Cy
   const challenge = lessonFourChallenges[intention];
 
   return {
-    exposure: { status: exposure, explanation: exposure === "Achieved" ? challenge.successCriteria[0].feedback.achieved : stops < 0 ? "The result is darker than this Curated Scene’s usable range." : "The result is brighter than this Curated Scene’s usable range." } satisfies CriterionFeedback,
-    motion: { status: motionStatus, explanation: challenge.successCriteria[1].feedback[motionStatus.toLowerCase() as "achieved" | "close" | "missed"] } satisfies CriterionFeedback,
+    exposure: { status: exposure, explanation: exposure === "Achieved"
+      ? challenge.successCriteria[0].feedback.achieved
+      : stops < 0
+        ? "The result is darker than this Curated Scene’s usable range. Raise ISO to restore Rendered Brightness without changing the current motion rendering."
+        : "The result is brighter than this Curated Scene’s usable range. Lower ISO to restore Rendered Brightness without changing the current motion rendering." } satisfies CriterionFeedback,
+    motion: { status: motionStatus, explanation: motionStatus === "Achieved"
+      ? challenge.successCriteria[1].feedback.achieved
+      : intention === "freeze"
+        ? "The cyclist retains directional travel, so the moment is not fully held. Choose 1/500s or faster, then widen aperture or raise ISO to replace the lost Captured Light."
+        : "The cyclist’s directional travel is too slight for the intended expression. Choose 1/60s or slower, then narrow aperture or lower ISO to balance the added Captured Light." } satisfies CriterionFeedback,
   };
 }

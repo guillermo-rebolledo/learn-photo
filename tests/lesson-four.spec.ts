@@ -5,7 +5,11 @@ test("shutter calculations express captured light and scene-calibrated motion bo
   expect(shutterCapturedLightStops(500, 125)).toBe(-2);
   expect(shutterCapturedLightStops(30, 125)).toBe(2.06);
   expect(cyclistMotion(1000)).toMatchObject({ band: "frozen", offset: 0 });
+  expect(cyclistMotion(500)).toMatchObject({ band: "frozen" });
+  expect(cyclistMotion(499)).toMatchObject({ band: "trace" });
   expect(cyclistMotion(125)).toMatchObject({ band: "trace" });
+  expect(cyclistMotion(61)).toMatchObject({ band: "trace" });
+  expect(cyclistMotion(60)).toMatchObject({ band: "flowing" });
   expect(cyclistMotion(30)).toMatchObject({ band: "flowing" });
 
   expect(evaluateCyclistAttempt({ aperture: 4, shutter: 500, iso: 800 }, "freeze")).toMatchObject({
@@ -21,7 +25,7 @@ test("learner changes shutter speed and receives synchronized directional motion
   await expect(page.getByRole("heading", { name: "Shutter speed shapes time" })).toBeVisible();
   const preview = page.getByRole("region", { name: "Hold a moment or let it travel" }).getByTestId("cyclist-rendered-result");
   await expect(preview).toHaveAttribute("data-motion-band", "trace");
-  await page.getByLabel("Guided shutter speed").selectOption("30");
+  await page.getByLabel("Guided shutter speed", { exact: true }).selectOption("30");
   await expect(preview).toHaveAttribute("data-motion-band", "flowing");
   await expect(page.getByText(/directional trail follows the cyclist/i).first()).toBeVisible();
   await page.getByText("Why this varies in real life").click();
@@ -47,16 +51,36 @@ test("separate cyclist Challenges independently grade usable exposure and motion
   await expect(page.getByRole("heading", { name: "Challenge complete" })).toBeVisible();
 });
 
-test("cyclist controls are keyboard accessible and preserve textual fallback", async ({ page }) => {
+test("cyclist shutter control operates from the keyboard", async ({ page }) => {
+  await page.goto("/lessons/shutter-speed-and-motion");
+  const faster = page.getByRole("button", { name: "Choose a faster guided shutter speed" });
+  await faster.focus();
+  await expect(faster).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.getByLabel("Guided shutter speed", { exact: true })).toHaveValue("250");
+  await expect(page.getByTestId("cyclist-rendered-result").first()).toHaveAttribute("data-motion-band", "trace");
+});
+
+test("cyclist controls preserve touch sizing and textual fallback", async ({ page }) => {
   await page.addInitScript(() => Object.defineProperty(CSS, "supports", { configurable: true, value: () => false }));
   await page.goto("/lessons/shutter-speed-and-motion");
-  const shutter = page.getByLabel("Guided shutter speed");
-  await shutter.focus();
-  await expect(shutter).toBeFocused();
+  const shutter = page.getByLabel("Guided shutter speed", { exact: true });
   await shutter.selectOption("30");
   await expect(shutter).toHaveCSS("min-height", "44px");
   await expect(page.getByText(/visual motion effect is unavailable/i).first()).toBeVisible();
   await page.getByRole("button", { name: "Take photo" }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByText("Criterion Status")).toBeVisible();
+});
+
+test("capture retains the immediately previous Attempt and provides Tradeoff Feedback", async ({ page }) => {
+  await page.goto("/lessons/shutter-speed-and-motion");
+  await page.getByRole("button", { name: "Take photo" }).click();
+  await expect(page.getByTestId("shutter-curtain")).toBeVisible();
+  await expect(page.getByText(/choose 1\/500s or faster/i)).toBeVisible();
+  await page.getByLabel("Challenge shutter speed").selectOption("500");
+  await page.getByRole("button", { name: "Take photo" }).click();
+  await page.getByRole("button", { name: "Compare with previous Attempt" }).click();
+  await expect(page.getByText(/Previous Attempt: f\/5.6 · 1\/125s · ISO 400/)).toBeVisible();
+  await expect(page.getByText(/Tradeoff Feedback:/)).toBeVisible();
 });
