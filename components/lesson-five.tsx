@@ -21,7 +21,7 @@ export function LessonFive({ explanation }: { explanation: React.ReactNode }) {
   const complete = feedback && Object.values(feedback).every(({ status }) => status === "Achieved");
 
   useEffect(() => {
-    setVisualEffectsAvailable(typeof CSS !== "undefined" && CSS.supports("filter", "brightness(1)") && CSS.supports("mask-image", "url(\"/images/dim-indoor-performance-motion.svg\")"));
+    setVisualEffectsAvailable(typeof CSS !== "undefined" && CSS.supports("filter", "brightness(1)") && CSS.supports("mask-image", "url(\"/images/dim-indoor-performance-motion.svg\")") && CSS.supports("mix-blend-mode", "screen"));
   }, []);
 
   function update(name: keyof ExposureSettings, value: string) { setSettings((current) => ({ ...current, [name]: Number(value) })); setFeedback(null); }
@@ -31,7 +31,7 @@ export function LessonFive({ explanation }: { explanation: React.ReactNode }) {
     <section className="experiment" aria-labelledby="iso-experiment-title">
       <div className="experiment-heading"><div><p className="eyebrow">Guided experiment</p><h2 id="iso-experiment-title">Lift the response, reveal the noise</h2></div><p>Captured Light stays fixed. Only ISO changes Rendered Brightness and the calibrated noise outcome.</p></div>
       <div className="simulator">
-        <PerformancePreview iso={guidedIso} shutter={200} noise={guidedNoise} label={`ISO ${guidedIso}`} eager />
+        <PerformancePreview iso={guidedIso} shutter={dimIndoorPerformanceScene.meterReference.shutter} noise={guidedNoise} label={`ISO ${guidedIso}`} eager />
         <div className="camera-controls"><label>Guided ISO<select aria-label="Guided ISO" value={guidedIso} onChange={(event) => setGuidedIso(Number(event.target.value))}>{isos.map((iso) => <option key={iso} value={iso}>ISO {iso}</option>)}</select></label><p className="control-outcome" aria-live="polite">ISO {guidedIso} is {isoStops(guidedIso)} Stops above ISO 100. {guidedNoise.description} Captured Light is unchanged.</p></div>
       </div>
     </section>

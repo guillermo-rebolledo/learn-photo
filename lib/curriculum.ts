@@ -215,7 +215,9 @@ function validateLessonThree() {
 function validateLessonFive() {
   const asset = imageManifest.dimIndoorPerformance;
   const sourceUrls = new Set(lessonFive.sources.map(({ url }) => url));
-  if (!lessons.some(({ slug }) => slug === lessonFive.slug) || lessonFiveChallenge.sceneId !== dimIndoorPerformanceScene.id || sourceUrls.size < 3 || asset.file !== dimIndoorPerformanceScene.sourceAsset || !asset.photographer.trim() || !asset.sourceUrl.startsWith("https://") || !asset.licenseUrl.startsWith("https://") || asset.noiseAssets.length === 0 || dimIndoorPerformanceScene.calibration.noise.some(({ iso, opacity }) => iso <= 0 || opacity < 0)) {
+  const noiseCalibration = dimIndoorPerformanceScene.calibration.noise;
+  const validNoiseCalibration = noiseCalibration.length >= 2 && noiseCalibration.every(({ iso, opacity }, index, anchors) => Number.isFinite(iso) && Number.isFinite(opacity) && iso > 0 && opacity >= 0 && opacity <= 1 && (index === 0 || iso > anchors[index - 1].iso));
+  if (!lessons.some(({ slug }) => slug === lessonFive.slug) || lessonFiveChallenge.sceneId !== dimIndoorPerformanceScene.id || sourceUrls.size < 3 || asset.file !== dimIndoorPerformanceScene.sourceAsset || !asset.photographer.trim() || !asset.sourceUrl.startsWith("https://") || !asset.licenseUrl.startsWith("https://") || asset.noiseAssets.length === 0 || !validNoiseCalibration) {
     throw new Error("Lesson 5 curriculum, provenance, and calibrated noise assets must be complete.");
   }
 }
