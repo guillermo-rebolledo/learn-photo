@@ -58,5 +58,33 @@
     "downloadDate": "2026-07-17",
     "licenseVerifiedDate": "2026-07-17",
     "modifications": "Resized and JPEG-optimized local derivatives; source-derived cyclist mask added for deterministic blurred motion echoes."
+  },
+  "brightSnow": {
+    "file": "bright-snow-960.jpg",
+    "derivatives": [
+      { "file": "bright-snow-480.jpg", "maxDimension": 480 },
+      { "file": "bright-snow-960.jpg", "maxDimension": 960 }
+    ],
+    "photographer": "MaeraT",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Khunjerab_-_the_snowy_landscape.jpg",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "downloadDate": "2026-07-18",
+    "licenseVerifiedDate": "2026-07-18",
+    "modifications": "Resized local derivatives; exposure rendering and luminance Histogram are derived deterministically in the Conceptual Simulator."
+  },
+  "darkStage": {
+    "file": "dark-stage-960.jpg",
+    "derivatives": [
+      { "file": "dark-stage-480.jpg", "maxDimension": 480 },
+      { "file": "dark-stage-960.jpg", "maxDimension": 960 }
+    ],
+    "photographer": "DonAdkinsPhoto",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Singer_singing_on_stage.jpg",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "downloadDate": "2026-07-18",
+    "licenseVerifiedDate": "2026-07-18",
+    "modifications": "Cropped around the performer and resized into local landscape derivatives; exposure rendering and luminance Histogram are derived deterministically in the Conceptual Simulator."
   }
 }

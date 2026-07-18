@@ -115,12 +115,55 @@ export const lessonFive = {
   ] satisfies CurriculumSource[],
 } as const satisfies LessonDefinition;
 
+export const lessonSix = {
+  slug: "meter-and-histogram",
+  sources: [
+    { title: "Exposure Indicator and Exposure Compensation", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/photography-glossary" },
+    { title: "Tips for Shooting in Cold Weather", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/c/tips-and-techniques/tips-for-shooting-in-cold-weather" },
+    { title: "EOS-1Ds Mark III instruction manual: brightness Histogram", publisher: "Canon", url: "https://files.canon-europe.com/files/soft31355/Manual/CUG_EOS1DsMKIII_EN_Flat.pdf" },
+    { title: "Using the Highlight-Weighted Metering Mode", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/c/products-and-innovation/using-the-highlight-weighted-metering-mode" },
+  ] satisfies CurriculumSource[],
+} as const satisfies LessonDefinition;
+
 export const dimIndoorPerformanceScene = {
   id: "dim-indoor-performance",
   sourceAsset: "dim-indoor-performance-960.jpg",
   assumptions: { format: "full frame", focalLengthMm: 85, stability: "handheld", subjectMotion: "energetic performer" },
   meterReference: { aperture: 1.8, shutter: 250, iso: 800 },
   calibration: { noise: [{ iso: 100, opacity: 0 }, { iso: 800, opacity: 0.08 }, { iso: 3200, opacity: 0.17 }, { iso: 12800, opacity: 0.26 }], motionSafeShutter: 250 },
+} as const;
+
+export const brightSnowScene = {
+  id: "bright-snow",
+  name: "Bright Snow",
+  sourceAsset: "bright-snow-960.jpg",
+  assumptions: { focalLengthMm: 27, stability: "handheld", subjectMotion: "still mountain landscape" },
+  meterReference: { aperture: 8, shutter: 250, iso: 100 },
+  intendedOffset: { achievedFrom: 0.75, achievedThrough: 1.5, closeFrom: 0.25, closeThrough: 2 },
+} as const;
+
+export const darkStageScene = {
+  id: "dark-stage",
+  name: "Dark Stage",
+  sourceAsset: "dark-stage-960.jpg",
+  assumptions: { focalLengthMm: 200, stability: "handheld", subjectMotion: "singer performing under stage light" },
+  meterReference: { aperture: 2.8, shutter: 125, iso: 1600 },
+  intendedOffset: { achievedFrom: -1.5, achievedThrough: -0.75, closeFrom: -2, closeThrough: -0.25 },
+} as const;
+
+export const lessonSixChallenges = {
+  brightSnow: {
+    id: "bright-snow-intention",
+    lessonSlug: lessonSix.slug,
+    sceneId: brightSnowScene.id,
+    photographicIntention: "Keep the snowy landscape recognizably bright while watching for lost highlight detail.",
+  },
+  darkStage: {
+    id: "dark-stage-intention",
+    lessonSlug: lessonSix.slug,
+    sceneId: darkStageScene.id,
+    photographicIntention: "Keep the stage naturally dark while preserving the lit performer as the visual focus.",
+  },
 } as const;
 
 export const lessonFiveChallenge = {
@@ -277,6 +320,25 @@ function validateLessonFive() {
   }
 }
 
+function validateLessonSix() {
+  const scenes = [
+    { scene: brightSnowScene, asset: imageManifest.brightSnow },
+    { scene: darkStageScene, asset: imageManifest.darkStage },
+  ];
+  const validAssets = scenes.every(({ scene, asset }) => asset.file === scene.sourceAsset
+    && asset.derivatives.length >= 2
+    && asset.photographer.trim()
+    && asset.sourceUrl.startsWith("https://")
+    && asset.licenseUrl.startsWith("https://")
+    && asset.licenseVerifiedDate === "2026-07-18");
+  const validIntentions = Object.values(lessonSixChallenges).every((challenge) => challenge.lessonSlug === lessonSix.slug
+    && challenge.photographicIntention.trim()
+    && scenes.some(({ scene }) => scene.id === challenge.sceneId));
+  if (lessonSix.sources.length < 3 || new Set(lessonSix.sources.map(({ url }) => url)).size !== lessonSix.sources.length || !validAssets || !validIntentions) {
+    throw new Error("Lesson 6 curriculum, metering scenes, provenance, and Challenges must be complete.");
+  }
+}
+
 function defineLearningPath<const T extends readonly Lesson[]>(items: T): T {
   const slugs = new Set(items.map(({ slug }) => slug));
   const numbers = new Set(items.map(({ number }) => number));
@@ -302,3 +364,4 @@ validateLessonTwo();
 validateLessonThree();
 validateLessonFour();
 validateLessonFive();
+validateLessonSix();
