@@ -3,12 +3,12 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { cyclistExposureStops, cyclistMotion, evaluateCyclistAttempt, shutterCapturedLightStops, type CyclistIntention } from "@/lib/shutter-model";
-import { lessonFour, lessonFourChallenges, movingCyclistScene } from "@/lib/curriculum";
+import { lessonFour, lessonFourChallenges, lessonFourControls, movingCyclistScene } from "@/lib/curriculum";
 import type { ExposureSettings } from "@/lib/exposure-model";
 
-const shutters = [30, 60, 125, 250, 500, 1000];
-const apertures = [4, 5.6, 8, 11];
-const isos = [100, 200, 400, 800, 1600];
+const shutters: readonly number[] = lessonFourControls.shutter;
+const apertures: readonly number[] = lessonFourControls.aperture;
+const isos: readonly number[] = lessonFourControls.iso;
 const storageKey = "learn-photo-progress";
 type CyclistAttempt = ExposureSettings & { intention: CyclistIntention; capturedAt: number };
 
@@ -50,7 +50,11 @@ export function LessonFour({ explanation }: { explanation: React.ReactNode }) {
     const saved = readSaved();
     const completedChallenges = new Set(Array.isArray(saved.completedChallenges) ? saved.completedChallenges.filter((item): item is string => typeof item === "string") : []);
     if (complete) completedChallenges.add(lessonFourChallenges[intention].id);
-    localStorage.setItem(storageKey, JSON.stringify({ ...saved, lesson: lessonFour.slug, lessonFourSettings: settings, lessonFourIntention: intention, lessonFourCurrentAttempt: currentAttempt, lessonFourPreviousAttempt: previousAttempt, completedChallenges: [...completedChallenges] }));
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({ ...saved, lesson: lessonFour.slug, lessonFourSettings: settings, lessonFourIntention: intention, lessonFourCurrentAttempt: currentAttempt, lessonFourPreviousAttempt: previousAttempt, completedChallenges: [...completedChallenges] }));
+    } catch {
+      // Browser-local Progress is optional; keep the Learning Loop available.
+    }
   }, [complete, currentAttempt, hydrated, intention, previousAttempt, settings]);
 
   function update(name: keyof ExposureSettings, value: string) {

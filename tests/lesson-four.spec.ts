@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { evaluateCyclistAttempt, shutterCapturedLightStops, cyclistMotion } from "../lib/shutter-model";
+import { movingCyclistScene } from "../lib/curriculum";
 
 test("shutter calculations express captured light and scene-calibrated motion boundaries", () => {
   expect(shutterCapturedLightStops(500, 125)).toBe(-2);
@@ -18,6 +19,11 @@ test("shutter calculations express captured light and scene-calibrated motion bo
   expect(evaluateCyclistAttempt({ aperture: 8, shutter: 30, iso: 200 }, "express-motion")).toMatchObject({
     exposure: { status: "Achieved" }, motion: { status: "Achieved" },
   });
+  expect(evaluateCyclistAttempt({ aperture: 8, shutter: 1000, iso: 1600 }, "freeze").exposure.explanation).toContain("Widen aperture");
+  expect(evaluateCyclistAttempt({ aperture: 4, shutter: 4000, iso: 1600 }, "freeze").exposure.explanation).toContain("slower shutter");
+  expect(evaluateCyclistAttempt({ aperture: 4, shutter: 30, iso: 100 }, "express-motion").exposure.explanation).toContain("Narrow aperture");
+  expect(evaluateCyclistAttempt({ aperture: 11, shutter: 4, iso: 100 }, "express-motion").exposure.explanation).toContain("faster shutter");
+  expect(evaluateCyclistAttempt({ aperture: 5.6, shutter: 125, iso: 400 }, "freeze").motion.explanation).toContain(`1/${movingCyclistScene.calibration.motion.frozenFrom}s`);
 });
 
 test("learner changes shutter speed and receives synchronized directional motion text", async ({ page }) => {
@@ -85,4 +91,19 @@ test("capture retains the immediately previous Attempt and provides Tradeoff Fee
   await page.getByRole("button", { name: "Compare with previous Attempt" }).click();
   await expect(page.getByText(/Previous Attempt: f\/5.6 · 1\/125s · ISO 400/)).toBeVisible();
   await expect(page.getByText(/Tradeoff Feedback:/)).toBeVisible();
+});
+
+test("lesson remains usable when browser-local Progress cannot be written", async ({ page }) => {
+  await page.addInitScript(() => {
+    const setItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (value.includes("lessonFourSettings")) throw new DOMException("Quota exceeded", "QuotaExceededError");
+      return setItem.call(this, key, value);
+    };
+  });
+  await page.goto("/lessons/shutter-speed-and-motion");
+  await page.getByRole("button", { name: "Take photo" }).click();
+  await expect(page.getByText("Criterion Status")).toBeVisible();
+  await page.getByLabel("Challenge shutter speed").selectOption("500");
+  await expect(page.getByLabel("Challenge shutter speed")).toHaveValue("500");
 });

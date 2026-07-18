@@ -81,6 +81,12 @@ export const lessonFour = {
   ] satisfies CurriculumSource[],
 } as const satisfies LessonDefinition;
 
+export const lessonFourControls = {
+  aperture: [4, 5.6, 8, 11],
+  shutter: [30, 60, 125, 250, 500, 1000],
+  iso: [100, 200, 400, 800, 1600],
+} as const;
+
 export const movingCyclistScene = {
   id: "moving-cyclist",
   sourceAsset: "moving-cyclist-960.jpg",

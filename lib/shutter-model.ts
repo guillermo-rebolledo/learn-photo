@@ -1,5 +1,5 @@
 import type { CriterionFeedback, ExposureSettings } from "./exposure-model";
-import { lessonFourChallenges, movingCyclistScene } from "./curriculum";
+import { lessonFourChallenges, lessonFourControls, movingCyclistScene } from "./curriculum";
 
 export type CyclistIntention = "freeze" | "express-motion";
 
@@ -26,6 +26,22 @@ function exposureStatus(distance: number): CriterionFeedback["status"] {
   return "Missed";
 }
 
+function exposureAdjustment(settings: ExposureSettings, stops: number) {
+  const widestAperture = lessonFourControls.aperture[0];
+  const narrowestAperture = lessonFourControls.aperture[lessonFourControls.aperture.length - 1];
+  const lowestIso = lessonFourControls.iso[0];
+  const highestIso = lessonFourControls.iso[lessonFourControls.iso.length - 1];
+
+  if (stops < 0) {
+    if (settings.iso < highestIso) return "Raise ISO to restore Rendered Brightness without changing the current motion rendering.";
+    if (settings.aperture > widestAperture) return "Widen aperture to restore Rendered Brightness without changing the current motion rendering.";
+    return "Choose a slower shutter to add Captured Light, knowing it will also increase visible travel.";
+  }
+  if (settings.iso > lowestIso) return "Lower ISO to restore Rendered Brightness without changing the current motion rendering.";
+  if (settings.aperture < narrowestAperture) return "Narrow aperture to restore Rendered Brightness without changing the current motion rendering.";
+  return "Choose a faster shutter to reduce Captured Light, knowing it will also reduce visible travel.";
+}
+
 export function evaluateCyclistAttempt(settings: ExposureSettings, intention: CyclistIntention) {
   const stops = cyclistExposureStops(settings);
   const exposure = exposureStatus(Math.abs(stops));
@@ -38,13 +54,11 @@ export function evaluateCyclistAttempt(settings: ExposureSettings, intention: Cy
   return {
     exposure: { status: exposure, explanation: exposure === "Achieved"
       ? challenge.successCriteria[0].feedback.achieved
-      : stops < 0
-        ? "The result is darker than this Curated Scene’s usable range. Raise ISO to restore Rendered Brightness without changing the current motion rendering."
-        : "The result is brighter than this Curated Scene’s usable range. Lower ISO to restore Rendered Brightness without changing the current motion rendering." } satisfies CriterionFeedback,
+      : `The result is ${stops < 0 ? "darker" : "brighter"} than this Curated Scene’s usable range. ${exposureAdjustment(settings, stops)}` } satisfies CriterionFeedback,
     motion: { status: motionStatus, explanation: motionStatus === "Achieved"
       ? challenge.successCriteria[1].feedback.achieved
       : intention === "freeze"
-        ? "The cyclist retains directional travel, so the moment is not fully held. Choose 1/500s or faster, then widen aperture or raise ISO to replace the lost Captured Light."
-        : "The cyclist’s directional travel is too slight for the intended expression. Choose 1/60s or slower, then narrow aperture or lower ISO to balance the added Captured Light." } satisfies CriterionFeedback,
+        ? `The cyclist retains directional travel, so the moment is not fully held. Choose 1/${movingCyclistScene.calibration.motion.frozenFrom}s or faster, then widen aperture or raise ISO to replace the lost Captured Light.`
+        : `The cyclist’s directional travel is too slight for the intended expression. Choose 1/${movingCyclistScene.calibration.motion.flowingThrough}s or slower, then narrow aperture or lower ISO to balance the added Captured Light.` } satisfies CriterionFeedback,
   };
 }
