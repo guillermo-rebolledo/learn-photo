@@ -97,13 +97,17 @@ test("lesson remains usable when browser-local Progress cannot be written", asyn
   await page.addInitScript(() => {
     const setItem = Storage.prototype.setItem;
     Storage.prototype.setItem = function (key, value) {
-      if (value.includes("lessonFourSettings")) throw new DOMException("Quota exceeded", "QuotaExceededError");
+      if (value.includes("lessonFourSettings")) {
+        window.__quotaExceededTriggered = true;
+        throw new DOMException("Quota exceeded", "QuotaExceededError");
+      }
       return setItem.call(this, key, value);
     };
   });
   await page.goto("/lessons/shutter-speed-and-motion");
   await page.getByRole("button", { name: "Take photo" }).click();
   await expect(page.getByText("Criterion Status")).toBeVisible();
+  expect(await page.evaluate(() => window.__quotaExceededTriggered)).toBe(true);
   await page.getByLabel("Challenge shutter speed").selectOption("500");
   await expect(page.getByLabel("Challenge shutter speed")).toHaveValue("500");
 });
