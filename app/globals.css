@@ -89,6 +89,11 @@ h1 { max-width: 12ch; margin: 0; font-size: clamp(3rem, 6vw, 5.5rem); font-weigh
 .no-visual-effects .portrait-background { filter: none !important; transform: none !important; }
 .no-visual-effects .portrait-subject { display: none; }
 .no-visual-effects .visual-fallback { display: inline; }
+.cyclist-preview .lesson-preview-frame { aspect-ratio: 3 / 2; overflow: hidden; }
+.cyclist-preview img { object-fit: cover; }
+.cyclist-trace { mix-blend-mode: screen; will-change: transform, opacity; }
+.no-visual-effects .cyclist-trace { display: none; }
+.photo-credit { margin: 3rem 0 1.5rem; color: var(--muted); max-width: 75ch; }
 .portrait-feedback { margin-top: 1.5rem; }
 
 .learning-path { width: min(100% - 2rem, 70rem); margin: 0 auto 7rem; }

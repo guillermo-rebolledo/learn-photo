@@ -27,5 +27,20 @@
     "downloadDate": "2026-07-17",
     "licenseVerifiedDate": "2026-07-17",
     "modifications": "Auto-oriented, resized, and JPEG-optimized local derivatives; calibrated subject mask added for deterministic relative depth rendering."
+  },
+  "movingCyclist": {
+    "file": "moving-cyclist-960.jpg",
+    "derivatives": [
+      { "file": "moving-cyclist-480.jpg", "maxDimension": 480 },
+      { "file": "moving-cyclist-960.jpg", "maxDimension": 960 }
+    ],
+    "motionAssets": [{ "file": "moving-cyclist-trace.svg", "role": "calibrated directional motion overlay" }],
+    "photographer": "Michal Mrozek",
+    "sourceUrl": "https://unsplash.com/photos/cyclist-riding-bicycle-on-road-qbdlII8L6zc",
+    "license": "Unsplash License",
+    "licenseUrl": "https://unsplash.com/license",
+    "downloadDate": "2026-07-17",
+    "licenseVerifiedDate": "2026-07-17",
+    "modifications": "Resized and JPEG-optimized local derivatives; calibrated directional trace overlay added for deterministic conceptual motion rendering."
   }
 }
