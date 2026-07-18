@@ -1,11 +1,20 @@
-import { brightSnowScene, darkStageScene } from "./curriculum";
-import type { CriterionFeedback, ExposureSettings } from "./exposure-model";
+import { meteringChallenges, meteringScenes } from "./curriculum";
+import type { CriterionFeedback, CriterionStatus, ExposureSettings } from "./exposure-model";
+
+export type MeteringSceneId = keyof typeof meteringScenes;
 
 export type LuminanceHistogram = {
   bins: number[];
   pixelCount: number;
   shadowClipping: boolean;
   highlightClipping: boolean;
+  shadowClippedRatio: number;
+  highlightClippedRatio: number;
+};
+
+export type MeteringAttemptEvaluation = {
+  complete: boolean;
+  criteria: Record<string, CriterionFeedback>;
 };
 
 export function meterOffsetStops(settings: ExposureSettings, reference: ExposureSettings) {
@@ -17,27 +26,51 @@ export function meterOffsetStops(settings: ExposureSettings, reference: Exposure
   return Math.round(stops * 100) / 100;
 }
 
+export function renderExposurePixels(pixels: Uint8ClampedArray, exposureStops: number) {
+  const rendered = new Uint8ClampedArray(pixels.length);
+  const multiplier = 2 ** exposureStops;
+  for (let index = 0; index + 3 < pixels.length; index += 4) {
+    rendered[index] = Math.min(255, Math.round(pixels[index] * multiplier));
+    rendered[index + 1] = Math.min(255, Math.round(pixels[index + 1] * multiplier));
+    rendered[index + 2] = Math.min(255, Math.round(pixels[index + 2] * multiplier));
+    rendered[index + 3] = pixels[index + 3];
+  }
+  return rendered;
+}
+
 export function buildLuminanceHistogram(pixels: Uint8ClampedArray, exposureStops: number, binCount = 24): LuminanceHistogram {
   const bins = Array.from({ length: binCount }, () => 0);
-  const multiplier = 2 ** exposureStops;
+  const rendered = renderExposurePixels(pixels, exposureStops);
   let pixelCount = 0;
-  let shadowClipping = false;
-  let highlightClipping = false;
+  let shadowClippedPixels = 0;
+  let highlightClippedPixels = 0;
 
-  for (let index = 0; index + 3 < pixels.length; index += 4) {
-    if (pixels[index + 3] === 0) continue;
-    const red = Math.min(255, Math.round(pixels[index] * multiplier));
-    const green = Math.min(255, Math.round(pixels[index + 1] * multiplier));
-    const blue = Math.min(255, Math.round(pixels[index + 2] * multiplier));
-    const luminance = Math.round((0.2126 * red) + (0.7152 * green) + (0.0722 * blue));
+  for (let index = 0; index + 3 < rendered.length; index += 4) {
+    if (rendered[index + 3] === 0) continue;
+    const luminance = Math.round((0.2126 * rendered[index]) + (0.7152 * rendered[index + 1]) + (0.0722 * rendered[index + 2]));
     const bin = Math.min(binCount - 1, Math.floor((luminance / 256) * binCount));
     bins[bin] += 1;
     pixelCount += 1;
-    shadowClipping ||= luminance <= 1;
-    highlightClipping ||= luminance >= 254;
+    if (luminance <= 1) shadowClippedPixels += 1;
+    if (luminance >= 254) highlightClippedPixels += 1;
   }
 
-  return { bins, pixelCount, shadowClipping, highlightClipping };
+  const shadowClippedRatio = pixelCount === 0 ? 0 : shadowClippedPixels / pixelCount;
+  const highlightClippedRatio = pixelCount === 0 ? 0 : highlightClippedPixels / pixelCount;
+  return {
+    bins,
+    pixelCount,
+    shadowClipping: shadowClippedPixels > 0,
+    highlightClipping: highlightClippedPixels > 0,
+    shadowClippedRatio,
+    highlightClippedRatio,
+  };
+}
+
+export function calibratedFallbackHistogram(sceneId: MeteringSceneId, meterOffset: number) {
+  const scene = meteringScenes[sceneId];
+  const pixels = new Uint8ClampedArray(scene.calibration.fallbackLuminances.flatMap((value) => [value, value, value, 255]));
+  return buildLuminanceHistogram(pixels, meterOffset - scene.calibration.sourceRenderingOffset);
 }
 
 export function summarizeHistogram(histogram: LuminanceHistogram) {
@@ -58,28 +91,50 @@ export function summarizeHistogram(histogram: LuminanceHistogram) {
   return `${distribution} ${clipping}`;
 }
 
-export type MeteringSceneId = typeof brightSnowScene.id | typeof darkStageScene.id;
+function tonalStatus(sceneId: MeteringSceneId, offset: number): CriterionStatus {
+  const target = meteringScenes[sceneId].calibration.intendedOffset;
+  if (offset >= target.achievedFrom && offset <= target.achievedThrough) return "Achieved";
+  if (offset >= target.closeFrom && offset <= target.closeThrough) return "Close";
+  return "Missed";
+}
 
-export function evaluateMeteringAttempt(sceneId: MeteringSceneId, settings: ExposureSettings): CriterionFeedback {
-  const scene = sceneId === brightSnowScene.id ? brightSnowScene : darkStageScene;
+function feedbackFor(status: CriterionStatus, feedback: { achieved: string; close: string; missed: string }): CriterionFeedback {
+  return { status, explanation: feedback[status.toLowerCase() as "achieved" | "close" | "missed"] };
+}
+
+export function evaluateMeteringAttempt(sceneId: MeteringSceneId, settings: ExposureSettings, suppliedHistogram?: LuminanceHistogram): MeteringAttemptEvaluation {
+  const scene = meteringScenes[sceneId];
+  const challenge = meteringChallenges[sceneId];
   const offset = meterOffsetStops(settings, scene.meterReference);
-  const target = scene.intendedOffset;
-  const status = offset >= target.achievedFrom && offset <= target.achievedThrough
+  const histogram = suppliedHistogram ?? calibratedFallbackHistogram(sceneId, offset);
+  const tones = feedbackFor(tonalStatus(sceneId, offset), challenge.successCriteria[0].feedback);
+
+  if (sceneId === "bright-snow") {
+    const detailCalibration = meteringScenes[sceneId].calibration.detail;
+    const detailStatus: CriterionStatus = histogram.highlightClippedRatio <= detailCalibration.achievedHighlightClippingThrough
+      ? "Achieved"
+      : histogram.highlightClippedRatio <= detailCalibration.closeHighlightClippingThrough ? "Close" : "Missed";
+    const criteria = {
+      tones,
+      detail: feedbackFor(detailStatus, meteringChallenges[sceneId].successCriteria[1].feedback),
+    };
+    return { complete: Object.values(criteria).every(({ status }) => status === "Achieved"), criteria };
+  }
+
+  const detailCalibration = meteringScenes[sceneId].calibration.detail;
+  const detailStatus: CriterionStatus = histogram.highlightClippedRatio <= detailCalibration.achievedHighlightClippingThrough
+    && histogram.shadowClippedRatio <= detailCalibration.achievedShadowClippingThrough
     ? "Achieved"
-    : offset >= target.closeFrom && offset <= target.closeThrough
-      ? "Close"
-      : "Missed";
-  const signedOffset = `${offset > 0 ? "+" : ""}${offset}`;
-
-  if (status === "Achieved") return {
-    status,
-    explanation: sceneId === "bright-snow"
-      ? `At ${signedOffset} Stops, the snow remains intentionally bright without treating meter zero as the answer.`
-      : `At ${signedOffset} Stops, the stage remains intentionally dark while the lit performer stays prominent.`,
+    : histogram.highlightClippedRatio <= detailCalibration.closeHighlightClippingThrough
+      && histogram.shadowClippedRatio <= detailCalibration.closeShadowClippingThrough ? "Close" : "Missed";
+  const motionCalibration = meteringScenes[sceneId].calibration.motion;
+  const motionStatus: CriterionStatus = settings.shutter >= motionCalibration.achievedShutterFrom
+    ? "Achieved"
+    : settings.shutter >= motionCalibration.closeShutterFrom ? "Close" : "Missed";
+  const criteria = {
+    tones,
+    detail: feedbackFor(detailStatus, meteringChallenges[sceneId].successCriteria[1].feedback),
+    motion: feedbackFor(motionStatus, meteringChallenges[sceneId].successCriteria[2].feedback),
   };
-
-  const direction = sceneId === "bright-snow"
-    ? "Add light relative to the Meter Reference so white snow is not rendered neutral gray."
-    : "Remove light relative to the Meter Reference so the dark stage is not lifted toward neutral gray.";
-  return { status, explanation: `The result sits at ${signedOffset} Stops. ${direction}` };
+  return { complete: Object.values(criteria).every(({ status }) => status === "Achieved"), criteria };
 }

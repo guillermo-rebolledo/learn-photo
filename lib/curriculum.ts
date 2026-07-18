@@ -139,7 +139,14 @@ export const brightSnowScene = {
   sourceAsset: "bright-snow-960.jpg",
   assumptions: { focalLengthMm: 27, stability: "handheld", subjectMotion: "still mountain landscape" },
   meterReference: { aperture: 8, shutter: 250, iso: 100 },
-  intendedOffset: { achievedFrom: 0.75, achievedThrough: 1.5, closeFrom: 0.25, closeThrough: 2 },
+  controls: { aperture: [5.6, 8, 11], shutter: [60, 125, 250, 500, 1000], iso: [100, 200, 400] },
+  calibration: {
+    sourceRenderingOffset: 1,
+    intendedOffset: { achievedFrom: 0.75, achievedThrough: 1.5, closeFrom: 0.25, closeThrough: 2 },
+    fallbackLuminances: [110, 145, 170, 185, 195, 205, 215, 220, 225, 230, 232, 235, 238, 240, 244, 248, 250],
+    detail: { achievedHighlightClippingThrough: 0.08, closeHighlightClippingThrough: 0.25 },
+    representativeOffsets: [-1, 0, 1, 2],
+  },
 } as const;
 
 export const darkStageScene = {
@@ -148,7 +155,20 @@ export const darkStageScene = {
   sourceAsset: "dark-stage-960.jpg",
   assumptions: { focalLengthMm: 200, stability: "handheld", subjectMotion: "singer performing under stage light" },
   meterReference: { aperture: 2.8, shutter: 125, iso: 1600 },
-  intendedOffset: { achievedFrom: -1.5, achievedThrough: -0.75, closeFrom: -2, closeThrough: -0.25 },
+  controls: { aperture: [2, 2.8, 4, 5.6], shutter: [30, 60, 125, 250, 500], iso: [400, 800, 1600, 3200] },
+  calibration: {
+    sourceRenderingOffset: -1,
+    intendedOffset: { achievedFrom: -1.5, achievedThrough: -0.75, closeFrom: -2, closeThrough: -0.25 },
+    fallbackLuminances: [0, 0, 1, 2, 4, 7, 10, 14, 20, 28, 38, 52, 72, 96, 130, 180, 232],
+    detail: { achievedHighlightClippingThrough: 0.08, closeHighlightClippingThrough: 0.2, achievedShadowClippingThrough: 0.45, closeShadowClippingThrough: 0.65 },
+    motion: { achievedShutterFrom: 125, closeShutterFrom: 60 },
+    representativeOffsets: [-2, -1, 0, 1],
+  },
+} as const;
+
+export const meteringScenes = {
+  [brightSnowScene.id]: brightSnowScene,
+  [darkStageScene.id]: darkStageScene,
 } as const;
 
 export const lessonSixChallenges = {
@@ -157,13 +177,27 @@ export const lessonSixChallenges = {
     lessonSlug: lessonSix.slug,
     sceneId: brightSnowScene.id,
     photographicIntention: "Keep the snowy landscape recognizably bright while watching for lost highlight detail.",
+    successCriteria: [
+      { id: "intended-tonal-rendering", label: "Bright Snow tonal rendering", essential: true, feedback: { achieved: "The snow remains intentionally bright without treating meter zero as the answer.", close: "The snow is close to its intended brightness, with a noticeable tonal compromise.", missed: "The snow is rendered against its naturally bright intention." } },
+      { id: "highlight-detail", label: "Snow highlight detail", essential: true, feedback: { achieved: "The bright snow retains useful tonal separation.", close: "Some snow detail is compressed at the brightest limit.", missed: "Broad highlight Clipping removes too much distinguishable snow detail." } },
+    ] satisfies SuccessCriterion[],
   },
   darkStage: {
     id: "dark-stage-intention",
     lessonSlug: lessonSix.slug,
     sceneId: darkStageScene.id,
     photographicIntention: "Keep the stage naturally dark while preserving the lit performer as the visual focus.",
+    successCriteria: [
+      { id: "intended-tonal-rendering", label: "Dark Stage tonal rendering", essential: true, feedback: { achieved: "The stage remains intentionally dark without treating meter zero as the answer.", close: "The stage is close to its intended darkness, with a noticeable tonal compromise.", missed: "The stage is rendered against its naturally dark intention." } },
+      { id: "performer-separation", label: "Performer and stage detail", essential: true, feedback: { achieved: "The lit performer remains separated from the intentionally dark surround.", close: "Clipping compresses some performer or stage separation.", missed: "Clipping removes too much distinguishable performer or stage detail." } },
+      { id: "performer-stability", label: "Performer stability", essential: true, feedback: { achieved: "The shutter is compatible with the handheld, moving-performer assumptions.", close: "The shutter carries a noticeable motion compromise.", missed: "The shutter conflicts with preserving the moving performer at 200 mm." } },
+    ] satisfies SuccessCriterion[],
   },
+} as const;
+
+export const meteringChallenges = {
+  [brightSnowScene.id]: lessonSixChallenges.brightSnow,
+  [darkStageScene.id]: lessonSixChallenges.darkStage,
 } as const;
 
 export const lessonFiveChallenge = {
@@ -333,6 +367,9 @@ function validateLessonSix() {
     && asset.licenseVerifiedDate === "2026-07-18");
   const validIntentions = Object.values(lessonSixChallenges).every((challenge) => challenge.lessonSlug === lessonSix.slug
     && challenge.photographicIntention.trim()
+    && challenge.successCriteria.length >= 2
+    && new Set(challenge.successCriteria.map(({ id }) => id)).size === challenge.successCriteria.length
+    && challenge.successCriteria.every((criterion) => criterion.label.trim() && Object.values(criterion.feedback).every((text) => text.trim()))
     && scenes.some(({ scene }) => scene.id === challenge.sceneId));
   if (lessonSix.sources.length < 3 || new Set(lessonSix.sources.map(({ url }) => url)).size !== lessonSix.sources.length || !validAssets || !validIntentions) {
     throw new Error("Lesson 6 curriculum, metering scenes, provenance, and Challenges must be complete.");

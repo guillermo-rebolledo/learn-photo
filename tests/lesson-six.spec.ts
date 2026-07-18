@@ -52,16 +52,17 @@ test("evaluation follows each Photographic Intention and accepts multiple settin
     { aperture: 8, shutter: 125, iso: 100 },
     { aperture: 8, shutter: 250, iso: 200 },
     { aperture: 5.6, shutter: 250, iso: 100 },
-  ]) expect(evaluateMeteringAttempt("bright-snow", settings).status).toBe("Achieved");
+  ]) expect(evaluateMeteringAttempt("bright-snow", settings)).toMatchObject({ complete: true, criteria: { tones: { status: "Achieved" }, detail: { status: "Achieved" } } });
 
   for (const settings of [
     { aperture: 2.8, shutter: 250, iso: 1600 },
     { aperture: 2.8, shutter: 125, iso: 800 },
     { aperture: 4, shutter: 125, iso: 1600 },
-  ]) expect(evaluateMeteringAttempt("dark-stage", settings).status).toBe("Achieved");
+  ]) expect(evaluateMeteringAttempt("dark-stage", settings)).toMatchObject({ complete: true, criteria: { tones: { status: "Achieved" }, detail: { status: "Achieved" }, motion: { status: "Achieved" } } });
 
-  expect(evaluateMeteringAttempt("bright-snow", brightSnowScene.meterReference)).toMatchObject({ status: "Missed" });
-  expect(evaluateMeteringAttempt("dark-stage", darkStageScene.meterReference)).toMatchObject({ status: "Missed" });
+  expect(evaluateMeteringAttempt("bright-snow", brightSnowScene.meterReference)).toMatchObject({ complete: false, criteria: { tones: { status: "Missed" } } });
+  expect(evaluateMeteringAttempt("dark-stage", darkStageScene.meterReference)).toMatchObject({ complete: false, criteria: { tones: { status: "Missed" } } });
+  expect(evaluateMeteringAttempt("dark-stage", { aperture: 4, shutter: 30, iso: 400 })).toMatchObject({ complete: false, criteria: { tones: { status: "Achieved" }, motion: { status: "Missed" } } });
 });
 
 test("guided Meter Reference and Histogram stay synchronized with the Rendered Result", async ({ page }) => {
@@ -74,6 +75,7 @@ test("guided Meter Reference and Histogram stay synchronized with the Rendered R
 
   await page.getByLabel("Guided shutter speed").selectOption("125");
   await expect(result).toHaveAttribute("data-meter-offset", "1");
+  await expect.poll(async () => Number(await page.getByTestId("luminance-histogram").first().getAttribute("data-pixel-count"))).toBeGreaterThan(1000);
   await expect(page.getByText(/Meter Reference: \+1 Stop/).first()).toBeVisible();
 
   await page.getByLabel("Guided metering scene").selectOption("dark-stage");
@@ -84,16 +86,22 @@ test("guided Meter Reference and Histogram stay synchronized with the Rendered R
 test("Bright Snow and Dark Stage Challenges reward deliberate departures from meter zero", async ({ page }) => {
   await page.goto("/lessons/meter-and-histogram");
   await page.getByRole("button", { name: "Take Bright Snow photo" }).click();
-  await expect(page.getByRole("article").filter({ hasText: "Bright Snow intention" })).toContainText("Missed");
+  await expect(page.getByTestId("shutter-curtain").first()).toBeVisible();
+  await expect(page.getByText("Criterion Status")).toHaveCount(0);
+  await expect(page.getByRole("article").filter({ hasText: "Bright Snow tonal rendering" })).toContainText("Missed");
   await page.getByLabel("Bright Snow shutter speed").selectOption("125");
   await page.getByRole("button", { name: "Take Bright Snow photo" }).click();
-  await expect(page.getByRole("article").filter({ hasText: "Bright Snow intention" })).toContainText("Achieved");
+  await expect(page.getByRole("article").filter({ hasText: "Bright Snow tonal rendering" })).toContainText("Achieved");
+  await expect(page.getByRole("article").filter({ hasText: "Snow highlight detail" })).toContainText("Achieved");
 
   await page.getByRole("button", { name: "Take Dark Stage photo" }).click();
-  await expect(page.getByRole("article").filter({ hasText: "Dark Stage intention" })).toContainText("Missed");
+  await expect(page.getByRole("article").filter({ hasText: "Dark Stage tonal rendering" })).toContainText("Missed");
   await page.getByLabel("Dark Stage shutter speed").selectOption("250");
   await page.getByRole("button", { name: "Take Dark Stage photo" }).click();
-  await expect(page.getByRole("article").filter({ hasText: "Dark Stage intention" })).toContainText("Achieved");
+  await expect(page.getByRole("article").filter({ hasText: "Dark Stage tonal rendering" })).toContainText("Achieved");
+  await expect(page.getByRole("article").filter({ hasText: "Performer and stage detail" })).toContainText("Achieved");
+  await expect(page.getByRole("article").filter({ hasText: "Performer stability" })).toContainText("Achieved");
+  await expect(page.getByRole("heading", { name: "Challenge complete" })).toHaveCount(2);
 });
 
 test("metering controls and nonvisual Histogram evidence remain accessible", async ({ page }) => {

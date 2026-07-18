@@ -1,48 +1,39 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  brightSnowScene,
-  darkStageScene,
   lessonSix,
-  lessonSixChallenges,
+  meteringChallenges,
+  meteringScenes,
 } from "@/lib/curriculum";
 import type { ExposureSettings } from "@/lib/exposure-model";
 import {
   buildLuminanceHistogram,
+  calibratedFallbackHistogram,
   evaluateMeteringAttempt,
   meterOffsetStops,
+  renderExposurePixels,
   summarizeHistogram,
   type LuminanceHistogram,
   type MeteringSceneId,
 } from "@/lib/metering-model";
 
-const scenes = { "bright-snow": brightSnowScene, "dark-stage": darkStageScene } as const;
-const guidedShutters = {
-  "bright-snow": [60, 125, 250, 500, 1000],
-  "dark-stage": [30, 60, 125, 250, 500],
-} as const;
-
-const challengeControls = {
-  "bright-snow": { aperture: [5.6, 8, 11], shutter: guidedShutters["bright-snow"], iso: [100, 200, 400] },
-  "dark-stage": { aperture: [2, 2.8, 4, 5.6], shutter: guidedShutters["dark-stage"], iso: [400, 800, 1600, 3200] },
-} as const;
-
 export function LessonSix({ explanation }: { explanation: React.ReactNode }) {
   const [guidedSceneId, setGuidedSceneId] = useState<MeteringSceneId>("bright-snow");
-  const [guidedSettings, setGuidedSettings] = useState<ExposureSettings>(brightSnowScene.meterReference);
+  const [guidedSettings, setGuidedSettings] = useState<ExposureSettings>(meteringScenes["bright-snow"].meterReference);
   const [visualEffectsAvailable, setVisualEffectsAvailable] = useState(true);
-  const guidedScene = scenes[guidedSceneId];
+  const guidedScene = meteringScenes[guidedSceneId];
   const guidedOffset = meterOffsetStops(guidedSettings, guidedScene.meterReference);
 
   useEffect(() => {
-    setVisualEffectsAvailable(typeof CSS !== "undefined" && CSS.supports("filter", "brightness(1)"));
+    const context = document.createElement("canvas").getContext("2d");
+    setVisualEffectsAvailable(Boolean(context) && typeof CSS !== "undefined" && CSS.supports("display", "block"));
   }, []);
 
   function chooseGuidedScene(sceneId: MeteringSceneId) {
     setGuidedSceneId(sceneId);
-    setGuidedSettings(scenes[sceneId].meterReference);
+    setGuidedSettings(meteringScenes[sceneId].meterReference);
   }
 
   return <div className={visualEffectsAvailable ? undefined : "no-metering-effects"}>
@@ -57,7 +48,7 @@ export function LessonSix({ explanation }: { explanation: React.ReactNode }) {
         <MeteringPreview sceneId={guidedSceneId} settings={guidedSettings} eager />
         <div className="camera-controls">
           <label>Guided metering scene<select aria-label="Guided metering scene" value={guidedSceneId} onChange={(event) => chooseGuidedScene(event.target.value as MeteringSceneId)}><option value="bright-snow">Bright Snow</option><option value="dark-stage">Dark Stage</option></select></label>
-          <label>Guided shutter speed<select aria-label="Guided shutter speed" value={guidedSettings.shutter} onChange={(event) => setGuidedSettings({ ...guidedSettings, shutter: Number(event.target.value) })}>{guidedShutters[guidedSceneId].map((shutter) => <option key={shutter} value={shutter}>1/{shutter}s</option>)}</select></label>
+          <label>Guided shutter speed<select aria-label="Guided shutter speed" value={guidedSettings.shutter} onChange={(event) => setGuidedSettings({ ...guidedSettings, shutter: Number(event.target.value) })}>{guidedScene.controls.shutter.map((shutter) => <option key={shutter} value={shutter}>1/{shutter}s</option>)}</select></label>
           <Meter offset={guidedOffset} />
           <p className="control-outcome" aria-live="polite">{meterLabel(guidedOffset)}. Zero is the Camera’s neutral estimate, not a verdict on {guidedScene.name}.</p>
         </div>
@@ -82,13 +73,19 @@ export function LessonSix({ explanation }: { explanation: React.ReactNode }) {
 }
 
 function MeteringChallenge({ sceneId }: { sceneId: MeteringSceneId }) {
-  const scene = scenes[sceneId];
-  const challenge = sceneId === "bright-snow" ? lessonSixChallenges.brightSnow : lessonSixChallenges.darkStage;
-  const controls = challengeControls[sceneId];
+  const scene = meteringScenes[sceneId];
+  const challenge = meteringChallenges[sceneId];
+  const controls = scene.controls;
   const [settings, setSettings] = useState<ExposureSettings>(scene.meterReference);
   const [feedback, setFeedback] = useState<ReturnType<typeof evaluateMeteringAttempt> | null>(null);
   const [capturing, setCapturing] = useState(false);
+  const [histogram, setHistogram] = useState(() => calibratedFallbackHistogram(sceneId, 0));
+  const captureTimer = useRef<number | null>(null);
   const offset = meterOffsetStops(settings, scene.meterReference);
+
+  useEffect(() => () => {
+    if (captureTimer.current !== null) window.clearTimeout(captureTimer.current);
+  }, []);
 
   function update(name: keyof ExposureSettings, value: string) {
     setSettings((current) => ({ ...current, [name]: Number(value) }));
@@ -96,14 +93,19 @@ function MeteringChallenge({ sceneId }: { sceneId: MeteringSceneId }) {
   }
 
   function takePhoto() {
+    if (captureTimer.current !== null) window.clearTimeout(captureTimer.current);
     setCapturing(true);
-    setFeedback(evaluateMeteringAttempt(sceneId, settings));
-    window.setTimeout(() => setCapturing(false), 220);
+    setFeedback(null);
+    const evaluation = evaluateMeteringAttempt(sceneId, settings, histogram);
+    captureTimer.current = window.setTimeout(() => {
+      setFeedback(evaluation);
+      setCapturing(false);
+    }, 220);
   }
 
   return <section className="metering-challenge" aria-labelledby={`${sceneId}-challenge-title`}>
     <header><p className="eyebrow">{scene.name}</p><h3 id={`${sceneId}-challenge-title`}>{challenge.photographicIntention}</h3></header>
-    <MeteringPreview sceneId={sceneId} settings={settings} capturing={capturing} />
+    <MeteringPreview sceneId={sceneId} settings={settings} capturing={capturing} onHistogramChange={setHistogram} />
     <div className="camera-controls metering-controls">
       <label>{scene.name} aperture<select aria-label={`${scene.name} aperture`} value={settings.aperture} onChange={(event) => update("aperture", event.target.value)}>{controls.aperture.map((value) => <option key={value} value={value}>f/{value}</option>)}</select></label>
       <label>{scene.name} shutter speed<select aria-label={`${scene.name} shutter speed`} value={settings.shutter} onChange={(event) => update("shutter", event.target.value)}>{controls.shutter.map((value) => <option key={value} value={value}>1/{value}s</option>)}</select></label>
@@ -111,31 +113,56 @@ function MeteringChallenge({ sceneId }: { sceneId: MeteringSceneId }) {
       <Meter offset={offset} />
       <button className="button primary-button capture-button" onClick={takePhoto}>Take {scene.name} photo</button>
     </div>
-    {feedback && <div className="feedback metering-feedback" aria-live="polite"><p className="eyebrow">Criterion Status</p><h3>{feedback.status === "Achieved" ? "Challenge complete" : "Keep experimenting"}</h3><article><h4>{scene.name} intention</h4><strong className={`status status-${feedback.status.toLowerCase()}`}>{feedback.status}</strong><p>{feedback.explanation}</p></article><p><strong>Tradeoff Feedback:</strong> Aperture, shutter speed, and ISO can move the Rendered Result relative to the Meter Reference in different combinations. Judge the visible intention and Clipping evidence together.</p></div>}
+    {feedback && <div className="feedback metering-feedback" aria-live="polite"><p className="eyebrow">Criterion Status</p><h3>{feedback.complete ? "Challenge complete" : "Keep experimenting"}</h3>{Object.values(feedback.criteria).map((criterion, index) => <article key={challenge.successCriteria[index].id}><h4>{challenge.successCriteria[index].label}</h4><strong className={`status status-${criterion.status.toLowerCase()}`}>{criterion.status}</strong><p>{criterion.explanation}</p></article>)}<p><strong>Tradeoff Feedback:</strong> Aperture, shutter speed, and ISO can move the Rendered Result relative to the Meter Reference in different combinations. Judge tonal distribution, Clipping evidence, and the scene assumptions together.</p></div>}
   </section>;
 }
 
-function MeteringPreview({ sceneId, settings, eager = false, capturing = false }: { sceneId: MeteringSceneId; settings: ExposureSettings; eager?: boolean; capturing?: boolean }) {
-  const scene = scenes[sceneId];
+function MeteringPreview({ sceneId, settings, eager = false, capturing = false, onHistogramChange }: { sceneId: MeteringSceneId; settings: ExposureSettings; eager?: boolean; capturing?: boolean; onHistogramChange?: (histogram: LuminanceHistogram) => void }) {
+  const scene = meteringScenes[sceneId];
   const meterOffset = meterOffsetStops(settings, scene.meterReference);
-  const renderedFromSourceStops = meterOffset - intendedSourceOffset(sceneId);
-  const [histogram, setHistogram] = useState(() => fallbackHistogram(sceneId, renderedFromSourceStops));
+  const renderedFromSourceStops = meterOffset - scene.calibration.sourceRenderingOffset;
+  const [histogram, setHistogram] = useState(() => calibratedFallbackHistogram(sceneId, meterOffset));
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const sourcePixels = useRef<{ sceneId: MeteringSceneId; pixels: Uint8ClampedArray; width: number; height: number } | null>(null);
   const summary = summarizeHistogram(histogram);
-  const brightness = Math.max(0.25, Math.min(2, 2 ** renderedFromSourceStops));
 
-  useEffect(() => setHistogram(fallbackHistogram(sceneId, renderedFromSourceStops)), [sceneId, renderedFromSourceStops]);
+  useEffect(() => {
+    const source = sourcePixels.current;
+    if (source?.sceneId === sceneId) {
+      paintRenderedResult(source.pixels, source.width, source.height);
+      return;
+    }
+    const fallback = calibratedFallbackHistogram(sceneId, meterOffset);
+    setHistogram(fallback);
+    onHistogramChange?.(fallback);
+  }, [sceneId, renderedFromSourceStops]);
+
+  function paintRenderedResult(pixels: Uint8ClampedArray, width: number, height: number) {
+    const renderedPixels = renderExposurePixels(pixels, renderedFromSourceStops);
+    const context = canvasRef.current?.getContext("2d");
+    if (context) {
+      canvasRef.current!.width = width;
+      canvasRef.current!.height = height;
+      context.putImageData(new ImageData(renderedPixels, width, height), 0, 0);
+    }
+    const derivedHistogram = buildLuminanceHistogram(renderedPixels, 0);
+    setHistogram(derivedHistogram);
+    onHistogramChange?.(derivedHistogram);
+  }
 
   function deriveHistogram(image: HTMLImageElement) {
     try {
-      const width = Math.min(240, image.naturalWidth);
+      const width = Math.min(480, image.naturalWidth);
       const height = Math.max(1, Math.round(width * image.naturalHeight / image.naturalWidth));
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const context = canvas.getContext("2d", { willReadFrequently: true });
+      const sourceCanvas = document.createElement("canvas");
+      sourceCanvas.width = width;
+      sourceCanvas.height = height;
+      const context = sourceCanvas.getContext("2d", { willReadFrequently: true });
       if (!context) return;
       context.drawImage(image, 0, 0, width, height);
-      setHistogram(buildLuminanceHistogram(context.getImageData(0, 0, width, height).data, renderedFromSourceStops));
+      const pixels = new Uint8ClampedArray(context.getImageData(0, 0, width, height).data);
+      sourcePixels.current = { sceneId, pixels, width, height };
+      paintRenderedResult(pixels, width, height);
     } catch {
       // The calibrated fallback stays synchronized when pixel inspection is unavailable.
     }
@@ -143,7 +170,8 @@ function MeteringPreview({ sceneId, settings, eager = false, capturing = false }
 
   return <figure className={`lesson-preview metering-preview ${sceneId}`} data-testid="metering-rendered-result" data-meter-offset={meterOffset} aria-label={`Rendered Result for ${scene.name} at ${signedStops(meterOffset)}. ${summary}`}>
     <div className="lesson-preview-frame">
-      <Image key={scene.sourceAsset} src={`/images/${scene.sourceAsset}`} alt={sceneId === "bright-snow" ? "A broad snow-covered mountain landscape beneath a blue sky" : "A singer lit in violet and blue against a dark stage"} fill priority={eager} sizes="(max-width: 800px) 100vw, 58vw" style={{ filter: `brightness(${brightness})` }} onLoad={(event) => deriveHistogram(event.currentTarget)} />
+      <Image key={scene.sourceAsset} src={`/images/${scene.sourceAsset}`} alt={sceneId === "bright-snow" ? "A broad snow-covered mountain landscape beneath a blue sky" : "A singer lit in violet and blue against a dark stage"} fill priority={eager} sizes="(max-width: 800px) 100vw, 58vw" onLoad={(event) => deriveHistogram(event.currentTarget)} />
+      <canvas ref={canvasRef} className="metering-canvas" aria-hidden />
       {capturing && <span className="shutter-curtain" data-testid="shutter-curtain" aria-hidden />}
       <div className="preview-readout"><span>{scene.name}</span><strong>f/{settings.aperture} · 1/{settings.shutter}s · ISO {settings.iso}</strong></div>
     </div>
@@ -158,7 +186,7 @@ function Histogram({ histogram, summary }: { histogram: LuminanceHistogram; summ
   const height = 92;
   const barWidth = width / histogram.bins.length;
   return <div className="histogram-panel">
-    <svg className="histogram" data-testid="luminance-histogram" role="img" aria-label={`Luminance Histogram. ${summary}`} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+    <svg className="histogram" data-testid="luminance-histogram" data-pixel-count={histogram.pixelCount} data-shadow-clipped-ratio={histogram.shadowClippedRatio.toFixed(4)} data-highlight-clipped-ratio={histogram.highlightClippedRatio.toFixed(4)} role="img" aria-label={`Luminance Histogram. ${summary}`} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
       <title>Luminance Histogram</title>
       {histogram.bins.map((count, index) => {
         const barHeight = count / maximum * (height - 4);
@@ -184,15 +212,4 @@ function meterLabel(offset: number) {
 
 function signedStops(offset: number) {
   return `${offset > 0 ? "+" : ""}${offset} Stop${Math.abs(offset) === 1 ? "" : "s"}`;
-}
-
-function intendedSourceOffset(sceneId: MeteringSceneId) {
-  return sceneId === "bright-snow" ? 1 : -1;
-}
-
-function fallbackHistogram(sceneId: MeteringSceneId, renderedFromSourceStops: number) {
-  const values = sceneId === "bright-snow"
-    ? [110, 145, 170, 185, 195, 205, 215, 220, 225, 230, 232, 235, 238, 240, 244, 248, 250]
-    : [0, 0, 1, 2, 4, 7, 10, 14, 20, 28, 38, 52, 72, 96, 130, 180, 232];
-  return buildLuminanceHistogram(new Uint8ClampedArray(values.flatMap((value) => [value, value, value, 255])), renderedFromSourceStops);
 }
