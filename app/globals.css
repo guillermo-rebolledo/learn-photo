@@ -91,7 +91,7 @@ h1 { max-width: 12ch; margin: 0; font-size: clamp(3rem, 6vw, 5.5rem); font-weigh
 .no-visual-effects .visual-fallback { display: inline; }
 .cyclist-preview .lesson-preview-frame { aspect-ratio: 3 / 2; overflow: hidden; }
 .cyclist-preview img { object-fit: cover; }
-.cyclist-motion-echo { mask: url("/images/moving-cyclist-subject.svg") center / cover no-repeat; will-change: transform, filter, opacity; }
+.cyclist-motion-echo { -webkit-mask: url("/images/moving-cyclist-subject.svg") center / cover no-repeat; mask: url("/images/moving-cyclist-subject.svg") center / cover no-repeat; will-change: transform, filter, opacity; }
 .shutter-curtain { position: absolute; z-index: 4; inset: 0; pointer-events: none; background: #050705; transform-origin: top; animation: cyclist-shutter 210ms ease-out both; }
 @keyframes cyclist-shutter { 0% { transform: scaleY(0); opacity: 0; } 45% { transform: scaleY(1); opacity: .92; } 100% { transform: scaleY(1); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {

@@ -36,7 +36,7 @@ export function LessonFour({ explanation }: { explanation: React.ReactNode }) {
   const complete = feedback && Object.values(feedback).every(({ status }) => status === "Achieved");
 
   useEffect(() => {
-    setVisualEffectsAvailable(typeof CSS !== "undefined" && CSS.supports("filter", "blur(1px)") && CSS.supports("mask-image", "url(\"/images/moving-cyclist-subject.svg\")"));
+    setVisualEffectsAvailable(typeof CSS !== "undefined" && CSS.supports("filter", "blur(1px)") && (CSS.supports("mask-image", "url(\"/images/moving-cyclist-subject.svg\")") || CSS.supports("-webkit-mask-image", "url(\"/images/moving-cyclist-subject.svg\")")));
     const saved = readSaved();
     if (saved.lessonFourSettings && typeof saved.lessonFourSettings === "object") setSettings((current) => ({ ...current, ...saved.lessonFourSettings as Partial<ExposureSettings> }));
     if (saved.lessonFourIntention === "express-motion") setIntention("express-motion");
@@ -111,7 +111,7 @@ function CyclistPreview({ shutter, motion, label, exposure = 0, capturing = fals
   const copies = motion.band === "flowing" ? 3 : motion.band === "trace" ? 1 : 0;
   return <figure className="lesson-preview cyclist-preview" data-testid="cyclist-rendered-result" data-motion-band={motion.band} aria-label={`Rendered Result: ${label}. ${motion.description}`}>
     <div className="lesson-preview-frame"><Image src="/images/moving-cyclist-960.jpg" alt="Cyclist riding along a road" fill loading="eager" sizes="(max-width: 760px) 100vw, 65vw" style={{ filter: `brightness(${Math.max(.35, Math.min(1.8, 2 ** exposure))})` }} />
-      {Array.from({ length: copies }, (_, index) => <Image className="cyclist-motion-echo" data-testid="cyclist-motion-echo" key={index} src="/images/moving-cyclist-960.jpg" alt="" aria-hidden fill sizes="(max-width: 760px) 100vw, 65vw" style={{ opacity: motion.band === "flowing" ? .2 - index * .045 : .16, transform: `translateX(${-motion.offset * (index + 1)}px)`, filter: `brightness(${Math.max(.35, Math.min(1.8, 2 ** exposure))}) blur(${motion.band === "flowing" ? 4 + index * 2 : 2.5}px)` }} />)}
+      {Array.from({ length: copies }, (_, index) => <Image className="cyclist-motion-echo" data-testid="cyclist-motion-echo" key={index} src="/images/moving-cyclist-960.jpg" alt="" aria-hidden fill loading="eager" sizes="(max-width: 760px) 100vw, 65vw" style={{ opacity: motion.band === "flowing" ? .3 - index * .06 : .26, transform: `translateX(${-motion.offset * (index + 1)}px)`, filter: `brightness(${Math.max(.35, Math.min(1.8, 2 ** exposure))}) saturate(1.15) contrast(1.04) blur(${motion.band === "flowing" ? 3.5 + index * 2 : 2.5}px)` }} />)}
       {capturing && <span className="shutter-curtain" data-testid="shutter-curtain" aria-hidden />}
     </div><figcaption><span>{label}</span><span>{motion.description}</span><span className="visual-fallback"> Visual motion effect is unavailable; the textual result remains authoritative.</span></figcaption>
   </figure>;
