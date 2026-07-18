@@ -37,6 +37,14 @@ type PortraitChallenge = {
   photographicIntentions: Record<"soft-background" | "defined-background", { label: string; targetExposureStops: number }>;
   successCriteria: readonly SuccessCriterion[];
 };
+type CyclistScene = {
+  id: string;
+  sourceAsset: string;
+  motionAssets: readonly { file: string; role: string }[];
+  assumptions: { focalLengthMm: number; stability: string; subjectMotion: string; panning: string };
+  meterReference: { aperture: number; shutter: number; iso: number };
+  calibration: { motion: { frozenFrom: number; flowingThrough: number; offsets: { frozen: number; trace: number; flowing: number }; representativeShutters: readonly number[] }; exposure: { achievedWithinStops: number; closeWithinStops: number } };
+};
 
 export const lessonOne = {
   slug: "light-and-exposure",
@@ -63,6 +71,40 @@ export const lessonThree = {
     { title: "Depth of field explained", publisher: "Canon", url: "https://www.canon-europe.com/get-inspired/tips-and-techniques/depth-of-field/" },
   ] satisfies CurriculumSource[],
 } as const satisfies LessonDefinition;
+
+export const lessonFour = {
+  slug: "shutter-speed-and-motion",
+  sources: [
+    { title: "Understanding shutter speed", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/c/tips-and-techniques/understanding-shutter-speed" },
+    { title: "Shutter speed", publisher: "Canon", url: "https://www.canon-europe.com/get-inspired/tips-and-techniques/shutter-speed/" },
+    { title: "Camera shake and shutter speed", publisher: "Cambridge in Colour", url: "https://www.cambridgeincolour.com/tutorials/camera-shake.htm" },
+  ] satisfies CurriculumSource[],
+} as const satisfies LessonDefinition;
+
+export const lessonFourControls = {
+  aperture: [4, 5.6, 8, 11],
+  shutter: [30, 60, 125, 250, 500, 1000],
+  iso: [100, 200, 400, 800, 1600],
+} as const;
+
+export const movingCyclistScene = {
+  id: "moving-cyclist",
+  sourceAsset: "moving-cyclist-960.jpg",
+  motionAssets: [{ file: "moving-cyclist-subject.svg", role: "source-derived cyclist mask for calibrated directional motion echoes" }],
+  assumptions: { focalLengthMm: 85, stability: "stable support", subjectMotion: "cyclist crossing left to right at a steady pace", panning: "Camera remains fixed" },
+  meterReference: { aperture: 5.6, shutter: 125, iso: 400 },
+  calibration: { motion: { frozenFrom: 500, flowingThrough: 60, offsets: { frozen: 0, trace: 16, flowing: 32 }, representativeShutters: [30, 125, 1000] }, exposure: { achievedWithinStops: 0.4, closeWithinStops: 1.1 } },
+} as const satisfies CyclistScene;
+
+const cyclistCriteria = [
+  { id: "usable-exposure", label: "Usable exposure", essential: true, feedback: { achieved: "The cyclist and road remain within this scene’s usable exposure range.", close: "The exposure is close, with a noticeable compromise.", missed: "The exposure falls outside the scene’s usable range." } },
+  { id: "intended-motion", label: "Intended motion rendering", essential: true, feedback: { achieved: "The motion rendering supports the selected Photographic Intention.", close: "The motion is recognizable but only partly supports the intention.", missed: "The motion rendering conflicts with the selected intention." } },
+] as const satisfies readonly SuccessCriterion[];
+
+export const lessonFourChallenges = {
+  freeze: { id: "freeze-moving-cyclist", label: "Freeze the cyclist", photographicIntention: "Hold the cyclist with little visible directional travel.", successCriteria: cyclistCriteria },
+  "express-motion": { id: "express-cyclist-motion", label: "Express the cyclist’s motion", photographicIntention: "Let directional travel communicate the cyclist’s movement.", successCriteria: cyclistCriteria },
+} as const;
 
 export const windowLightPortraitScene = {
   id: "window-light-portrait",
@@ -184,6 +226,19 @@ function validateLessonThree() {
   }
 }
 
+function validateLessonFour() {
+  const assetRecord = imageManifest.movingCyclist;
+  const challengeIds = Object.values(lessonFourChallenges).map(({ id }) => id);
+  const validAssets = assetRecord.file === movingCyclistScene.sourceAsset
+    && movingCyclistScene.motionAssets.every(({ file }) => assetRecord.motionAssets.some((asset) => asset.file === file))
+    && assetRecord.photographer.trim() && assetRecord.sourceUrl.startsWith("https://") && assetRecord.licenseUrl.startsWith("https://");
+  const validCalibration = movingCyclistScene.calibration.motion.representativeShutters.length >= 3
+    && movingCyclistScene.calibration.motion.frozenFrom > movingCyclistScene.calibration.motion.flowingThrough;
+  if (lessonFour.sources.length < 2 || new Set(lessonFour.sources.map(({ url }) => url)).size !== lessonFour.sources.length || new Set(challengeIds).size !== challengeIds.length || !validAssets || !validCalibration) {
+    throw new Error("Lesson 4 curriculum, Challenges, and calibrated motion assets must be complete.");
+  }
+}
+
 function defineLearningPath<const T extends readonly Lesson[]>(items: T): T {
   const slugs = new Set(items.map(({ slug }) => slug));
   const numbers = new Set(items.map(({ number }) => number));
@@ -207,3 +262,4 @@ export const lessons = defineLearningPath([
 validateLessonOne();
 validateLessonTwo();
 validateLessonThree();
+validateLessonFour();
