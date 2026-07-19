@@ -137,6 +137,17 @@ h1 { max-width: 12ch; margin: 0; font-size: clamp(3rem, 6vw, 5.5rem); font-weigh
 .metering-fallback { display: none; }
 .no-metering-effects .metering-canvas { display: none; }
 .no-metering-effects .metering-fallback { display: inline; }
+.sandbox-page > h1 { max-width: 13ch; }
+.sandbox-scenes { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin: 3rem 0 0; padding: 1rem; border: 1px solid var(--line); }
+.sandbox-scenes legend { padding-inline: .4rem; font-weight: 720; }
+.sandbox-scenes label, .sandbox-histogram-toggle { min-height: 2.75rem; display: flex !important; align-items: center; gap: .6rem !important; padding: .5rem .7rem; background: var(--surface); color: var(--text) !important; cursor: pointer; }
+.sandbox-adjustment { min-height: 1.5rem; margin: .7rem 0; color: var(--muted); font-size: .82rem; }
+.sandbox-preview .lesson-preview-frame { aspect-ratio: 3 / 2; }
+.sandbox-portrait-subject { mask: url("/images/window-light-portrait-subject.svg") center / cover no-repeat; }
+.sandbox-cyclist-echo { mask: url("/images/moving-cyclist-subject.svg") center / cover no-repeat; }
+.sandbox-preview .histogram-panel { border-top: 0; }
+.sandbox-simulator .camera-controls { align-content: start; }
+.no-sandbox-effects .sandbox-portrait-subject, .no-sandbox-effects .sandbox-cyclist-echo, .no-sandbox-effects .sandbox-preview .noise-layer { display: none; }
 
 .learning-path { width: min(100% - 2rem, 70rem); margin: 0 auto 7rem; }
 .section-heading { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; padding-bottom: 2rem; border-bottom: 1px solid var(--line); align-items: end; }
@@ -240,6 +251,7 @@ h1 { max-width: 12ch; margin: 0; font-size: clamp(3rem, 6vw, 5.5rem); font-weigh
   .camera-controls { grid-template-columns: 1fr; }
   .equivalent-controls, .stop-demo-controls { grid-template-columns: 1fr; }
   .capture-button { grid-column: auto; }
+  .sandbox-scenes { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {

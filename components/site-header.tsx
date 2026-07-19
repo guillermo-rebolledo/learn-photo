@@ -4,7 +4,7 @@ import { ThemeSwitch } from "./theme-switch";
 const navItems = [
   { href: "/", label: "Learn", state: null },
   { href: "/lessons/light-and-exposure", label: "Lesson", state: null },
-  { href: "/sandbox", label: "Sandbox", state: "Preview" },
+  { href: "/sandbox", label: "Sandbox" },
   { href: "/reference", label: "Reference", state: "Preview" },
 ];
 
