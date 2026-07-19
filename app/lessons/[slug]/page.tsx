@@ -16,6 +16,7 @@ import { LessonSix } from "@/components/lesson-six";
 import MeterAndHistogramContent from "@/content/lessons/meter-and-histogram.mdx";
 import { LessonSeven } from "@/components/lesson-seven";
 import ExposureModesContent from "@/content/lessons/exposure-modes.mdx";
+import { LessonEight } from "@/components/lesson-eight";
 
 export function generateStaticParams() { return lessons.map(({ slug }) => ({ slug })); }
 
@@ -25,7 +26,7 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
   if (!lesson) notFound();
 
   return (
-    <main id="main" className={["01", "03", "04", "05", "06", "07"].includes(lesson.number) ? "lesson-page interactive-lesson-page" : "simple-page lesson-page"}>
+    <main id="main" className={["01", "03", "04", "05", "06", "07", "08"].includes(lesson.number) ? "lesson-page interactive-lesson-page" : "simple-page lesson-page"}>
       <LessonPositionTracker slug={lesson.slug} />
       <p className="eyebrow">Lesson {lesson.number} · {lesson.time}</p>
       <h1>{lesson.title}</h1>
@@ -44,6 +45,8 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
         <LessonSix explanation={<MeterAndHistogramContent />} />
       ) : lesson.number === "07" ? (
         <LessonSeven explanation={<ExposureModesContent />} />
+      ) : lesson.number === "08" ? (
+        <LessonEight />
       ) : <p className="status-note"><strong>Open, not locked.</strong> This Lesson’s learning content is being prepared.</p>}
       <Link className="text-link" href="/">← Back to the Learning Path</Link>
     </main>

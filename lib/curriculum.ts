@@ -172,6 +172,15 @@ export const lessonSeven = {
   ] satisfies CurriculumSource[],
 } as const satisfies LessonDefinition;
 
+export const lessonEight = {
+  slug: "choosing-settings",
+  sources: [
+    { title: "Camera exposure: aperture, ISO and shutter speed", publisher: "Cambridge in Colour", url: "https://www.cambridgeincolour.com/tutorials/camera-exposure.htm" },
+    { title: "Understanding shutter speed", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/c/tips-and-techniques/understanding-shutter-speed" },
+    { title: "Understanding maximum aperture", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/c/tips-and-techniques/understanding-maximum-aperture" },
+  ] satisfies CurriculumSource[],
+} as const satisfies LessonDefinition;
+
 export const exposureModeScene = {
   id: movingCyclistScene.id,
   meterReference: movingCyclistScene.meterReference,
@@ -530,10 +539,10 @@ export const lessons = defineLearningPath([
   { slug: "choosing-settings", number: "08", title: "Choosing settings for an intention", summary: "Bring every Exposure Control together.", time: "10 min" },
 ] as const);
 
-const allCurriculumSources: readonly CurriculumSource[] = [...lessonOne.sources, ...lessonTwo.sources, ...lessonThree.sources, ...lessonFour.sources, ...lessonFive.sources, ...lessonSix.sources, ...lessonSeven.sources];
+const allCurriculumSources: readonly CurriculumSource[] = [...lessonOne.sources, ...lessonTwo.sources, ...lessonThree.sources, ...lessonFour.sources, ...lessonFive.sources, ...lessonSix.sources, ...lessonSeven.sources, ...lessonEight.sources];
 export const curriculumSources: readonly CurriculumSource[] = [...new Map(allCurriculumSources.map((source) => [source.url, source])).values()];
 
-[lessonTwo, lessonThree, lessonFour, lessonFive, lessonSeven].forEach((lesson) => validateCurriculumSources(lesson.sources, `Lesson ${lesson.slug}`));
+[lessonTwo, lessonThree, lessonFour, lessonFive, lessonSeven, lessonEight].forEach((lesson) => validateCurriculumSources(lesson.sources, `Lesson ${lesson.slug}`));
 
 validateLessonOne();
 validateLessonTwo();

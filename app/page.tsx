@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ExposurePreview } from "@/components/exposure-preview";
 import { lessons } from "@/lib/curriculum";
 import { ProgressLink } from "@/components/progress-link";
+import { LearningPathStatus } from "@/components/learning-path-status";
 
 export default function LearnPage() {
   return (
@@ -34,6 +35,7 @@ export default function LearnPage() {
             </li>
           ))}
         </ol>
+        <LearningPathStatus />
       </section>
     </main>
   );
