@@ -152,6 +152,33 @@ export const lessonSix = {
   ] satisfies CurriculumSource[],
 } as const satisfies LessonDefinition;
 
+export const lessonSeven = {
+  slug: "exposure-modes",
+  sources: [
+    { title: "Camera modes", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/c/tips-and-techniques/camera-modes" },
+    { title: "Exposure compensation", publisher: "Canon", url: "https://www.canon-europe.com/get-inspired/tips-and-techniques/exposure-compensation/" },
+    { title: "Auto ISO sensitivity control", publisher: "Nikon", url: "https://onlinemanual.nikonimglib.com/z7II_z6II/en/09_menu_guide_03_05.html" },
+  ] satisfies CurriculumSource[],
+} as const satisfies LessonDefinition;
+
+export const exposureModeScene = {
+  id: movingCyclistScene.id,
+  meterReference: movingCyclistScene.meterReference,
+  limits: {
+    aperture: [2.8, 4, 5.6, 8, 11],
+    shutter: [30, 60, 125, 250, 500, 1000],
+    iso: [100, 200, 400, 800, 1600, 3200],
+  },
+} as const;
+
+export const lessonSevenChallenge = {
+  id: "exposure-mode-moving-cyclist",
+  lessonSlug: lessonSeven.slug,
+  sceneId: movingCyclistScene.id,
+  photographicIntention: "Freeze the cyclist with usable exposure, regardless of which Exposure Mode divides the work.",
+  successCriteria: lessonFourChallenges.freeze.successCriteria,
+} as const;
+
 export const dimIndoorPerformanceScene = {
   id: "dim-indoor-performance",
   sourceAsset: "dim-indoor-performance-960.jpg",
@@ -437,6 +464,14 @@ function validateLessonSix() {
   }
 }
 
+function validateLessonSeven() {
+  const controls = exposureModeScene.limits;
+  const validLimits = Object.values(controls).every((values) => values.length >= 3 && values.every((value) => Number.isFinite(value) && value > 0));
+  if (!lessons.some(({ slug }) => slug === lessonSeven.slug) || lessonSeven.sources.length < 3 || new Set(lessonSeven.sources.map(({ url }) => url)).size !== lessonSeven.sources.length || lessonSevenChallenge.sceneId !== movingCyclistScene.id || lessonSevenChallenge.successCriteria.length < 2 || !validLimits) {
+    throw new Error("Lesson 7 Exposure Modes, sources, Curated Scene, and Challenge must be complete.");
+  }
+}
+
 function defineLearningPath<const T extends readonly Lesson[]>(items: T): T {
   const slugs = new Set(items.map(({ slug }) => slug));
   const numbers = new Set(items.map(({ number }) => number));
@@ -463,3 +498,4 @@ validateLessonThree();
 validateLessonFour();
 validateLessonFive();
 validateLessonSix();
+validateLessonSeven();
