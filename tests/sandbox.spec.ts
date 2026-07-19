@@ -91,3 +91,19 @@ test("text outcomes remain available when visual effects are unsupported", async
   await page.getByLabel("Show luminance Histogram").check();
   await expect(page.getByTestId("sandbox-histogram")).toBeVisible();
 });
+
+test("Histogram asset failure does not disable supported visual effects", async ({ page }) => {
+  await page.goto("/sandbox");
+  await page.evaluate(() => {
+    Object.defineProperty(window, "Image", { configurable: true, value: class {
+      onerror: null | (() => void) = null;
+      set src(_value: string) { queueMicrotask(() => this.onerror?.()); }
+    } });
+  });
+
+  await page.getByRole("radio", { name: "Window-Light Portrait" }).check();
+  await page.getByLabel("Show luminance Histogram").check();
+  await expect(page.getByTestId("sandbox-histogram")).toContainText(/Histogram is unavailable/i);
+  await expect(page.getByText(/visual refinement is unavailable/i)).toHaveCount(0);
+  await expect(page.getByTestId("sandbox-rendered-result").locator(".sandbox-portrait-subject")).toBeVisible();
+});

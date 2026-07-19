@@ -9,6 +9,18 @@ import { reconcileSceneSettings, sandboxExposureOffset, sandboxScenes, sceneCred
 
 const modeNames: Record<ExposureMode, string> = { Auto: "Auto", P: "Program (P)", A: "Aperture Priority (A / Av)", S: "Shutter Priority (S / Tv)", M: "Manual (M)" };
 
+function portraitBlurFor(sceneId: SandboxSceneId, aperture: number) {
+  return sceneId === "window-light-portrait" ? (aperture <= 2.8 ? 14 : aperture >= 8 ? 0 : 7) : 0;
+}
+
+function motionEchoCountFor(sceneId: SandboxSceneId, shutter: number) {
+  return sceneId === "moving-cyclist" && shutter < 500 ? (shutter <= 60 ? 3 : 1) : 0;
+}
+
+function noiseOpacityFor(sceneId: SandboxSceneId, iso: number) {
+  return sceneId === "dim-indoor-performance" ? Math.max(0, Math.min(.28, Math.log2(iso / 100) * .04)) : 0;
+}
+
 export function Sandbox() {
   const [sceneId, setSceneId] = useState<SandboxSceneId>("neutral-still-life");
   const [scaleName, setScaleName] = useState<SandboxScale>("beginner");
@@ -18,6 +30,7 @@ export function Sandbox() {
   const [compensation, setCompensation] = useState(0);
   const [autoIso, setAutoIso] = useState(false);
   const [histogram, setHistogram] = useState<LuminanceHistogram | null>(null);
+  const [histogramUnavailable, setHistogramUnavailable] = useState(false);
   const [adjustment, setAdjustment] = useState("");
   const [visualEffectsAvailable, setVisualEffectsAvailable] = useState(true);
   const scene = sandboxScenes.find((candidate) => candidate.id === sceneId) ?? sandboxScenes[0];
@@ -60,7 +73,7 @@ export function Sandbox() {
       const context = canvas.getContext("2d", { willReadFrequently: true });
       if (!context) throw new Error("Canvas unavailable");
       const drawingContext = context;
-      const blur = currentSceneId === "window-light-portrait" ? (settings.aperture <= 2.8 ? 14 : settings.aperture >= 8 ? 0 : 7) : 0;
+      const blur = portraitBlurFor(currentSceneId, settings.aperture);
       context.filter = `brightness(${2 ** exposureStops}) blur(${blur}px)`;
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
 
@@ -93,17 +106,17 @@ export function Sandbox() {
       if (currentSceneId === "window-light-portrait" && blur > 0) {
         await drawMaskedLayer("/images/window-light-portrait-subject.svg", 0, 1, 0);
       }
-      if (currentSceneId === "moving-cyclist" && settings.shutter < 500) {
-        const echoCount = settings.shutter <= 60 ? 3 : 1;
+      const echoCount = motionEchoCountFor(currentSceneId, settings.shutter);
+      if (echoCount > 0) {
         for (let index = 0; index < echoCount; index += 1) {
           await drawMaskedLayer("/images/moving-cyclist-subject.svg", -3 * (index + 1), .26 - index * .05, 3 + index * 2);
         }
       }
-      if (currentSceneId === "dim-indoor-performance" && settings.iso > 100) {
+      const performanceNoiseOpacity = noiseOpacityFor(currentSceneId, settings.iso);
+      if (performanceNoiseOpacity > 0) {
         const noise = await loadLayer("/images/dim-indoor-performance-noise.svg");
-        const opacity = Math.max(0, Math.min(.28, Math.log2(settings.iso / 100) * .04));
         drawingContext.filter = "none";
-        drawingContext.globalAlpha = opacity;
+        drawingContext.globalAlpha = performanceNoiseOpacity;
         drawingContext.globalCompositeOperation = "screen";
         const tileSize = 18;
         for (let x = 0; x < canvas.width; x += tileSize) for (let y = 0; y < canvas.height; y += tileSize) drawingContext.drawImage(noise, x, y, tileSize, tileSize);
@@ -112,15 +125,16 @@ export function Sandbox() {
       }
       const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
       setHistogram(buildLuminanceHistogram(pixels, 0));
-    } catch { setHistogram(null); setVisualEffectsAvailable(false); }
+      setHistogramUnavailable(false);
+    } catch { setHistogram(null); setHistogramUnavailable(true); }
   }, []);
 
   useEffect(() => { if (imageRef.current) publishHistogram(imageRef.current, offset, scene.id, resolved.settings); }, [offset, scene.id, resolved.settings.aperture, resolved.settings.shutter, resolved.settings.iso, publishHistogram]);
-  const histogramSummary = histogram ? summarizeHistogram(histogram) : "The pixel-derived luminance Histogram is temporarily unavailable; the textual Rendered Result remains authoritative.";
+  const histogramSummary = histogram ? summarizeHistogram(histogram) : histogramUnavailable ? "The pixel-derived luminance Histogram is unavailable; the textual Rendered Result remains authoritative." : "The pixel-derived luminance Histogram is updating.";
   const histogramMax = histogram ? Math.max(...histogram.bins, 1) : 1;
-  const motionEchoes = scene.id === "moving-cyclist" && resolved.settings.shutter < 500 ? (resolved.settings.shutter <= 60 ? 3 : 1) : 0;
-  const portraitBlur = scene.id === "window-light-portrait" ? (resolved.settings.aperture <= 2.8 ? 14 : resolved.settings.aperture >= 8 ? 0 : 7) : 0;
-  const noiseOpacity = scene.id === "dim-indoor-performance" ? Math.max(0, Math.min(.28, Math.log2(resolved.settings.iso / 100) * .04)) : 0;
+  const motionEchoes = motionEchoCountFor(scene.id, resolved.settings.shutter);
+  const portraitBlur = portraitBlurFor(scene.id, resolved.settings.aperture);
+  const noiseOpacity = noiseOpacityFor(scene.id, resolved.settings.iso);
 
   return <div className={visualEffectsAvailable ? undefined : "no-sandbox-effects"}>
     <fieldset className="sandbox-scenes" role="radiogroup" aria-label="Curated Scene"><legend>Curated Scene</legend>{sandboxScenes.map((candidate) => <label key={candidate.id}><input type="radio" name="sandbox-scene" checked={scene.id === candidate.id} onChange={() => chooseScene(candidate.id)} />{candidate.name}</label>)}</fieldset>
