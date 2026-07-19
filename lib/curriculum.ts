@@ -72,6 +72,13 @@ type MeteringChallengeDefinition<SceneId extends string> = {
   photographicIntention: string;
   successCriteria: readonly SuccessCriterion[];
 };
+type ExposureModeChallengeDefinition = {
+  id: string;
+  lessonSlug: string;
+  sceneId: string;
+  photographicIntention: string;
+  successCriteria: readonly SuccessCriterion[];
+};
 
 export const lessonOne = {
   slug: "light-and-exposure",
@@ -164,11 +171,7 @@ export const lessonSeven = {
 export const exposureModeScene = {
   id: movingCyclistScene.id,
   meterReference: movingCyclistScene.meterReference,
-  limits: {
-    aperture: [2.8, 4, 5.6, 8, 11],
-    shutter: [30, 60, 125, 250, 500, 1000],
-    iso: [100, 200, 400, 800, 1600, 3200],
-  },
+  limits: lessonFourControls,
 } as const;
 
 export const lessonSevenChallenge = {
@@ -177,7 +180,7 @@ export const lessonSevenChallenge = {
   sceneId: movingCyclistScene.id,
   photographicIntention: "Freeze the cyclist with usable exposure, regardless of which Exposure Mode divides the work.",
   successCriteria: lessonFourChallenges.freeze.successCriteria,
-} as const;
+} as const satisfies ExposureModeChallengeDefinition;
 
 export const dimIndoorPerformanceScene = {
   id: "dim-indoor-performance",
@@ -467,7 +470,10 @@ function validateLessonSix() {
 function validateLessonSeven() {
   const controls = exposureModeScene.limits;
   const validLimits = Object.values(controls).every((values) => values.length >= 3 && values.every((value) => Number.isFinite(value) && value > 0));
-  if (!lessons.some(({ slug }) => slug === lessonSeven.slug) || lessonSeven.sources.length < 3 || new Set(lessonSeven.sources.map(({ url }) => url)).size !== lessonSeven.sources.length || lessonSevenChallenge.sceneId !== movingCyclistScene.id || lessonSevenChallenge.successCriteria.length < 2 || !validLimits) {
+  const validCriteria = lessonSevenChallenge.successCriteria.length >= 2
+    && new Set(lessonSevenChallenge.successCriteria.map(({ id }) => id)).size === lessonSevenChallenge.successCriteria.length
+    && lessonSevenChallenge.successCriteria.every((criterion) => criterion.id.trim() && criterion.label.trim() && Object.values(criterion.feedback).every((text) => text.trim()));
+  if (!lessons.some(({ slug }) => slug === lessonSeven.slug) || lessonSevenChallenge.lessonSlug !== lessonSeven.slug || !lessonSevenChallenge.id.trim() || !lessonSevenChallenge.photographicIntention.trim() || lessonSeven.sources.length < 3 || new Set(lessonSeven.sources.map(({ url }) => url)).size !== lessonSeven.sources.length || lessonSevenChallenge.sceneId !== movingCyclistScene.id || !validCriteria || !validLimits) {
     throw new Error("Lesson 7 Exposure Modes, sources, Curated Scene, and Challenge must be complete.");
   }
 }
