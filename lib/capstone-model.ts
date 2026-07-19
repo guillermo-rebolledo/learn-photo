@@ -7,10 +7,11 @@ export type CapstonePath = "motion" | "depth" | "lowLight";
 export type CapstoneResult = {
   criteria: readonly { id: string; label: string; essential: boolean; result: CriterionFeedback }[];
   complete: boolean;
+  tradeoff: string;
 };
 
-function result(criteria: CapstoneResult["criteria"]): CapstoneResult {
-  return { criteria, complete: criteria.every(({ essential, result }) => !essential || result.status === "Achieved") };
+function result(criteria: CapstoneResult["criteria"], tradeoff: string): CapstoneResult {
+  return { criteria, complete: criteria.every(({ essential, result }) => !essential || result.status === "Achieved"), tradeoff };
 }
 
 export function evaluateCapstone(path: CapstonePath, settings: ExposureSettings): CapstoneResult {
@@ -19,7 +20,7 @@ export function evaluateCapstone(path: CapstonePath, settings: ExposureSettings)
     return result([
       { id: "usable-exposure", label: "Usable exposure", essential: true, result: evaluated.exposure },
       { id: "intended-motion", label: "Intended motion", essential: true, result: evaluated.motion },
-    ]);
+    ], evaluated.motion.status !== "Achieved" ? evaluated.motion.explanation : settings.iso > 800 ? "The fast shutter freezes travel, while the higher ISO replaces Rendered Brightness with a visible image-quality cost." : "The fast shutter freezes travel; the wider aperture replaces its lost Captured Light without requiring as much ISO.");
   }
   if (path === "depth") {
     const evaluated = evaluatePortraitAttempt(settings, "defined-background");
@@ -27,14 +28,14 @@ export function evaluateCapstone(path: CapstonePath, settings: ExposureSettings)
       { id: "usable-exposure", label: "Usable exposure", essential: true, result: evaluated.exposure },
       { id: "intended-depth", label: "Intended depth of field", essential: true, result: evaluated.depth },
       { id: "fixed-film-speed", label: "Fixed film speed", essential: true, result: { status: settings.iso === 400 ? "Achieved" : "Missed", explanation: settings.iso === 400 ? "ISO 400 remains fixed across the roll." : "The Film Constraint requires ISO 400 across the roll." } },
-    ]);
+    ], evaluated.depth.status !== "Achieved" ? evaluated.depth.explanation : "The narrow aperture preserves depth but records less Captured Light, so the slower shutter restores exposure while ISO 400 remains fixed.");
   }
   const evaluated = evaluatePerformanceAttempt(settings, "freeze");
   return result([
     { id: "usable-exposure", label: "Usable exposure", essential: true, result: evaluated.exposure },
     { id: "intended-motion", label: "Intended motion", essential: true, result: evaluated.motion },
     { id: "image-quality", label: "Image quality", essential: false, result: evaluated.quality },
-  ]);
+  ], evaluated.motion.status !== "Achieved" ? evaluated.motion.explanation : evaluated.quality.status === "Achieved" ? "A motion-safe shutter protects the performer; the open aperture limits how far ISO must rise." : "The motion-safe shutter and narrower aperture preserve the intended result, while the higher ISO makes noise the optional compromise.");
 }
 
 export const capstoneDefinitions = {
@@ -52,7 +53,7 @@ export const capstoneDefinitions = {
     intention: "Preserve background definition with an ISO 400 Film Constraint.",
     hint: "Start with a narrower aperture for depth, then use shutter speed to restore Captured Light; film speed stays fixed.",
     defaults: { aperture: 5.6, shutter: 60, iso: 400 },
-    controls: { aperture: [2.8, 4, 5.6, 8, 11], shutter: [30, 60, 125, 250], iso: [400] },
+    controls: { aperture: [2.8, 4, 5.6, 8, 11], shutter: [15, 30, 60, 125, 250], iso: [400] },
   },
   lowLight: {
     title: "Protect a low-light performance",

@@ -7,6 +7,7 @@ test("Lesson 8 teaches an intention-first settings strategy", async ({ page }) =
   await expect(page.getByText(/choose the Exposure Control that most directly shapes it/i)).toBeVisible();
   await expect(page.getByText(/rebalance the other controls/i)).toBeVisible();
   await expect(page.getByText(/more than one settings combination/i)).toBeVisible();
+  await expect(page.getByText(/Exposure Mode that keeps the defining decision/i)).toBeVisible();
 });
 
 test("motion Capstone supports retries, learner-initiated hints, and multiple solutions", async ({ page }) => {
@@ -44,6 +45,10 @@ test("depth Capstone applies a Film Constraint and completes on essential criter
   await challenge.getByRole("button", { name: "Take photo" }).click();
   await expect(challenge.getByRole("heading", { name: "Challenge complete" })).toBeVisible();
   await expect(challenge.getByText("Fixed across the roll", { exact: true })).toBeVisible();
+  await challenge.getByLabel("Depth aperture").selectOption("11");
+  await challenge.getByLabel("Depth shutter").selectOption("15");
+  await challenge.getByRole("button", { name: "Retry" }).click();
+  await expect(challenge.getByRole("heading", { name: "Challenge complete" })).toBeVisible();
 });
 
 test("optional low-light quality may remain Close without blocking Capstone completion", async ({ page }) => {
