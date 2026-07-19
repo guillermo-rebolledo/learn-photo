@@ -166,7 +166,7 @@ export const lessonSix = {
 export const lessonSeven = {
   slug: "exposure-modes",
   sources: [
-    { title: "Camera modes", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/c/tips-and-techniques/camera-modes" },
+    { title: "Exposure Mode", publisher: "Nikon", url: "https://onlinemanual.nikonimglib.com/d850/en/11_exposure_02.html" },
     { title: "Exposure compensation", publisher: "Canon", url: "https://www.canon-europe.com/get-inspired/tips-and-techniques/exposure-compensation/" },
     { title: "Auto ISO sensitivity control", publisher: "Nikon", url: "https://onlinemanual.nikonimglib.com/z7II_z6II/en/09_menu_guide_03_05.html" },
   ] satisfies CurriculumSource[],
