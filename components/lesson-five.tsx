@@ -60,6 +60,7 @@ export function LessonFive({ explanation }: { explanation: React.ReactNode }) {
 }
 
 type FilmSettings = Record<FilmIntention, ExposureSettings>;
+type FilmFeedback = ReturnType<typeof evaluateFilmConstraint>;
 const initialFilmSettings: FilmSettings = {
   depth: { aperture: 4, shutter: 60, iso: filmConstraintChallenges.depth.rollIso },
   motion: { aperture: 2, shutter: 250, iso: filmConstraintChallenges.motion.rollIso },
@@ -67,8 +68,8 @@ const initialFilmSettings: FilmSettings = {
 
 function FilmConstraints() {
   const [settings, setSettings] = useState<FilmSettings>(initialFilmSettings);
-  const [feedback, setFeedback] = useState<Partial<Record<FilmIntention, ReturnType<typeof evaluateFilmConstraint>>>>({});
-  const [previousFeedback, setPreviousFeedback] = useState<Partial<Record<FilmIntention, ReturnType<typeof evaluateFilmConstraint>>>>({});
+  const [feedback, setFeedback] = useState<Partial<Record<FilmIntention, FilmFeedback>>>({});
+  const [previousFeedback, setPreviousFeedback] = useState<Partial<Record<FilmIntention, FilmFeedback>>>({});
   const [currentAttempts, setCurrentAttempts] = useState<Partial<FilmSettings>>({});
   const [previousAttempts, setPreviousAttempts] = useState<Partial<FilmSettings>>({});
   const restored = useRef(false);
@@ -83,10 +84,10 @@ function FilmConstraints() {
           motion: sanitizeFilmSettings("motion", candidate.motion, initialFilmSettings.motion),
         });
       }
-      if (saved?.filmConstraintFeedback) setFeedback(saved.filmConstraintFeedback);
-      if (saved?.filmConstraintPreviousFeedback) setPreviousFeedback(saved.filmConstraintPreviousFeedback);
-      if (saved?.filmConstraintCurrentAttempts) setCurrentAttempts(saved.filmConstraintCurrentAttempts);
-      if (saved?.filmConstraintPreviousAttempts) setPreviousAttempts(saved.filmConstraintPreviousAttempts);
+      setFeedback(sanitizeFilmFeedback(saved?.filmConstraintFeedback));
+      setPreviousFeedback(sanitizeFilmFeedback(saved?.filmConstraintPreviousFeedback));
+      setCurrentAttempts(sanitizeFilmAttempts(saved?.filmConstraintCurrentAttempts));
+      setPreviousAttempts(sanitizeFilmAttempts(saved?.filmConstraintPreviousAttempts));
     } catch { /* Browser-local Progress can recover from malformed data. */ }
     restored.current = true;
   }, []);
@@ -97,12 +98,15 @@ function FilmConstraints() {
       const saved = JSON.parse(localStorage.getItem("learn-photo-progress") ?? "{}");
       localStorage.setItem("learn-photo-progress", JSON.stringify({ ...saved, lesson: lessonFive.slug, filmConstraintSettings: settings, filmConstraintFeedback: feedback, filmConstraintPreviousFeedback: previousFeedback, filmConstraintCurrentAttempts: currentAttempts, filmConstraintPreviousAttempts: previousAttempts }));
     } catch {
-      localStorage.setItem("learn-photo-progress", JSON.stringify({ lesson: lessonFive.slug, filmConstraintSettings: settings }));
+      try {
+        localStorage.setItem("learn-photo-progress", JSON.stringify({ lesson: lessonFive.slug, filmConstraintSettings: settings }));
+      } catch { /* Browser-local Progress is optional; keep both Challenges usable. */ }
     }
   }, [settings, feedback, previousFeedback, currentAttempts, previousAttempts]);
 
   function update(intention: FilmIntention, control: "aperture" | "shutter", value: string) {
     setSettings((current) => ({ ...current, [intention]: { ...current[intention], [control]: Number(value), iso: filmConstraintChallenges[intention].rollIso } }));
+    setFeedback((current) => withoutFilmEntry(current, intention));
   }
 
   function submit(intention: FilmIntention) {
@@ -167,6 +171,52 @@ function sanitizeFilmSettings(intention: FilmIntention, candidate: Partial<Expos
     shutter: challenge.controls.shutter.includes(candidate.shutter as never) ? Number(candidate.shutter) : fallback.shutter,
     iso: challenge.rollIso,
   };
+}
+
+function sanitizeFilmAttempts(candidate: unknown): Partial<FilmSettings> {
+  if (!isRecord(candidate)) return {};
+  const valid: Partial<FilmSettings> = {};
+  for (const intention of ["depth", "motion"] as const) {
+    const attempt = candidate[intention];
+    const challenge = filmConstraintChallenges[intention];
+    if (isRecord(attempt)
+      && challenge.controls.aperture.includes(attempt.aperture as never)
+      && challenge.controls.shutter.includes(attempt.shutter as never)
+      && attempt.iso === challenge.rollIso) {
+      valid[intention] = { aperture: Number(attempt.aperture), shutter: Number(attempt.shutter), iso: challenge.rollIso };
+    }
+  }
+  return valid;
+}
+
+function sanitizeFilmFeedback(candidate: unknown): Partial<Record<FilmIntention, FilmFeedback>> {
+  if (!isRecord(candidate)) return {};
+  const valid: Partial<Record<FilmIntention, FilmFeedback>> = {};
+  for (const intention of ["depth", "motion"] as const) {
+    const result = candidate[intention];
+    if (isFilmFeedback(result)) valid[intention] = result;
+  }
+  return valid;
+}
+
+function isFilmFeedback(candidate: unknown): candidate is FilmFeedback {
+  if (!isRecord(candidate)) return false;
+  return ["exposure", "intention", "filmSpeed"].every((key) => {
+    const criterion = candidate[key];
+    return isRecord(criterion)
+      && (criterion.status === "Achieved" || criterion.status === "Close" || criterion.status === "Missed")
+      && typeof criterion.explanation === "string";
+  });
+}
+
+function withoutFilmEntry<T>(values: Partial<Record<FilmIntention, T>>, intention: FilmIntention) {
+  const next = { ...values };
+  delete next[intention];
+  return next;
+}
+
+function isRecord(candidate: unknown): candidate is Record<string, unknown> {
+  return Boolean(candidate) && typeof candidate === "object" && !Array.isArray(candidate);
 }
 
 function PerformancePreview({ iso, shutter, noise, label, exposure = Math.log2(iso / dimIndoorPerformanceScene.meterReference.iso), eager = false }: { iso: number; shutter: number; noise: ReturnType<typeof noiseOutcome>; label: string; exposure?: number; eager?: boolean }) {

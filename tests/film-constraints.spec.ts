@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { evaluateFilmConstraint } from "../lib/film-model";
-import { lessonFour, lessonThree, lessonTwo, validateCurriculumSources } from "../lib/curriculum";
+import { filmConstraintChallenges, lessonFour, lessonThree, lessonTwo, validateCurriculumSources, validateFilmChallengeShape } from "../lib/curriculum";
 
 test("Film Constraint evaluation locks roll ISO and accepts multiple solutions", () => {
   expect(evaluateFilmConstraint({ aperture: 4, shutter: 60, iso: 400 }, "depth")).toMatchObject({
@@ -21,6 +21,13 @@ test("relevant Lessons validate authoritative film Curriculum Sources", () => {
     expect(lesson.sources.some(({ publisher }) => publisher === "Kodak")).toBe(true);
   }
   expect(() => validateCurriculumSources([{ title: "", publisher: "Unknown", url: "https://example.com" }], "Invalid Lesson")).toThrow(/Curriculum Sources/);
+});
+
+test("film curriculum validation enforces evaluator order and positional criterion IDs", () => {
+  const challenges = Object.entries(filmConstraintChallenges).map(([key, challenge]) => ({ key, ...challenge }));
+  expect(validateFilmChallengeShape(challenges)).toBe(true);
+  expect(validateFilmChallengeShape([...challenges].reverse())).toBe(false);
+  expect(validateFilmChallengeShape(challenges.map((challenge, index) => index === 0 ? { ...challenge, successCriteria: [...challenge.successCriteria].reverse() } : challenge))).toBe(false);
 });
 
 test("Lesson explains film speed and exposes authoritative film sources", async ({ page }) => {
@@ -46,6 +53,41 @@ test("Film Constraints lock ISO, evaluate tradeoffs, and restore unfinished choi
   const feedback = page.getByRole("region", { name: "Depth Film Constraint feedback" });
   await expect(feedback).toContainText("Challenge complete");
   await expect(feedback).toContainText("fixed at ISO 400 across this roll");
+});
+
+test("malformed saved Film Constraint feedback and Attempts are discarded", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("learn-photo-progress", JSON.stringify({
+    filmConstraintFeedback: { depth: { exposure: { status: "Bogus" } } },
+    filmConstraintPreviousFeedback: { motion: "invalid" },
+    filmConstraintCurrentAttempts: { depth: { aperture: "wide", shutter: -1, iso: 800 } },
+    filmConstraintPreviousAttempts: { motion: { aperture: null, shutter: 250, iso: 400 } },
+  })));
+  await page.goto("/lessons/iso-and-image-quality");
+  await expect(page.getByRole("region", { name: "Depth Film Constraint feedback" })).toHaveCount(0);
+  await expect(page.getByLabel("Depth Film Constraint aperture")).toHaveValue("4");
+  await expect(page.getByTestId("depth-film-rendered-result")).toBeVisible();
+});
+
+test("changing Film Constraint controls clears completed feedback", async ({ page }) => {
+  await page.goto("/lessons/iso-and-image-quality");
+  await page.getByRole("button", { name: "Take depth Film Constraint photo" }).click();
+  const feedback = page.getByRole("region", { name: "Depth Film Constraint feedback" });
+  await expect(feedback).toContainText("Challenge complete");
+  await page.getByLabel("Depth Film Constraint aperture").selectOption("2.8");
+  await expect(feedback).toHaveCount(0);
+});
+
+test("Film Constraints remain usable when browser-local Progress writes are blocked", async ({ page }) => {
+  await page.addInitScript(() => {
+    const setItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (key === "learn-photo-progress" && value.includes("filmConstraintSettings")) throw new DOMException("Storage blocked", "SecurityError");
+      return setItem.call(this, key, value);
+    };
+  });
+  await page.goto("/lessons/iso-and-image-quality");
+  await page.getByRole("button", { name: "Take depth Film Constraint photo" }).click();
+  await expect(page.getByRole("region", { name: "Depth Film Constraint feedback" })).toContainText("Challenge complete");
 });
 
 test("Reference compares digital ISO with film speed", async ({ page }) => {

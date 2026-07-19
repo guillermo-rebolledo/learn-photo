@@ -71,7 +71,7 @@ type MeteringSceneDefinition<Id extends string> = {
     representativeOffsets: readonly number[];
   };
 };
-type MeteringChallengeDefinition<SceneId extends string> = {
+type ChallengeDefinition<SceneId extends string> = {
   id: string;
   lessonSlug: string;
   sceneId: SceneId;
@@ -163,6 +163,29 @@ export const lessonSix = {
   ] satisfies CurriculumSource[],
 } as const satisfies LessonDefinition;
 
+export const lessonSeven = {
+  slug: "exposure-modes",
+  sources: [
+    { title: "Camera modes", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/c/tips-and-techniques/camera-modes" },
+    { title: "Exposure compensation", publisher: "Canon", url: "https://www.canon-europe.com/get-inspired/tips-and-techniques/exposure-compensation/" },
+    { title: "Auto ISO sensitivity control", publisher: "Nikon", url: "https://onlinemanual.nikonimglib.com/z7II_z6II/en/09_menu_guide_03_05.html" },
+  ] satisfies CurriculumSource[],
+} as const satisfies LessonDefinition;
+
+export const exposureModeScene = {
+  id: movingCyclistScene.id,
+  meterReference: movingCyclistScene.meterReference,
+  limits: lessonFourControls,
+} as const;
+
+export const lessonSevenChallenge = {
+  id: "exposure-mode-moving-cyclist",
+  lessonSlug: lessonSeven.slug,
+  sceneId: movingCyclistScene.id,
+  photographicIntention: "Freeze the cyclist with usable exposure, regardless of which Exposure Mode divides the work.",
+  successCriteria: lessonFourChallenges.freeze.successCriteria,
+} as const satisfies ChallengeDefinition<typeof movingCyclistScene.id>;
+
 export const dimIndoorPerformanceScene = {
   id: "dim-indoor-performance",
   sourceAsset: "dim-indoor-performance-960.jpg",
@@ -218,7 +241,7 @@ export const lessonSixChallenges = {
       { id: "intended-tonal-rendering", label: "Bright Snow tonal rendering", essential: true, feedback: { achieved: "The snow remains intentionally bright without treating meter zero as the answer.", close: "The snow is close to its intended brightness, with a noticeable tonal compromise.", missed: "The snow is rendered against its naturally bright intention." } },
       { id: "highlight-detail", label: "Snow highlight detail", essential: true, feedback: { achieved: "The bright snow retains useful tonal separation.", close: "Some snow detail is compressed at the brightest limit.", missed: "Broad highlight Clipping removes too much distinguishable snow detail." } },
     ] satisfies SuccessCriterion[],
-  } satisfies MeteringChallengeDefinition<"bright-snow">,
+  } satisfies ChallengeDefinition<"bright-snow">,
   darkStage: {
     id: "dark-stage-intention",
     lessonSlug: lessonSix.slug,
@@ -228,7 +251,7 @@ export const lessonSixChallenges = {
       { id: "intended-tonal-rendering", label: "Dark Stage tonal rendering", essential: true, feedback: { achieved: "The stage remains intentionally dark without treating meter zero as the answer.", close: "The stage is close to its intended darkness, with a noticeable tonal compromise.", missed: "The stage is rendered against its naturally dark intention." } },
       { id: "performer-separation", label: "Performer and stage detail", essential: true, feedback: { achieved: "The lit performer remains separated from the intentionally dark surround.", close: "Clipping compresses some performer or stage separation.", missed: "Clipping removes too much distinguishable performer or stage detail." } },
     ] satisfies SuccessCriterion[],
-  } satisfies MeteringChallengeDefinition<"dark-stage">,
+  } satisfies ChallengeDefinition<"dark-stage">,
 } as const;
 
 export const meteringChallenges = {
@@ -266,6 +289,17 @@ export const filmConstraintChallenges = {
   depth: { id: "film-depth", lessonSlug: lessonFive.slug, sceneId: windowLightPortraitScene.id, label: "Preserve useful depth", photographicIntention: "Use f/4 or narrower while balancing the rendering.", rollIso: 400, meterReference: { aperture: 2.8, shutter: 125, iso: 400 }, controls: { aperture: [1.4, 2, 2.8, 4, 5.6], shutter: [30, 60, 125, 250, 500] }, successCriteria: filmCriteria, tradeoffFeedback: "The fixed roll speed leaves aperture and shutter to balance depth against Captured Light." },
   motion: { id: "film-motion", lessonSlug: lessonFive.slug, sceneId: movingCyclistScene.id, label: "Freeze movement", photographicIntention: "Use 1/250s or faster while balancing the rendering.", rollIso: 400, meterReference: { aperture: 2.8, shutter: 125, iso: 400 }, controls: { aperture: [1.4, 2, 2.8, 4, 5.6], shutter: [30, 60, 125, 250, 500] }, successCriteria: filmCriteria, tradeoffFeedback: "The fixed roll speed leaves aperture and shutter to balance motion against Captured Light." },
 } as const;
+
+export function validateFilmChallengeShape(challenges: readonly { key: string; id: string; successCriteria: readonly { id: string }[] }[]) {
+  const expected = [
+    { key: "depth", id: "film-depth", criterionIds: ["usable-exposure", "photographic-intention", "fixed-film-speed"] },
+    { key: "motion", id: "film-motion", criterionIds: ["usable-exposure", "photographic-intention", "fixed-film-speed"] },
+  ] as const;
+  return challenges.length === expected.length && challenges.every((challenge, index) => challenge.key === expected[index].key
+    && challenge.id === expected[index].id
+    && challenge.successCriteria.length === expected[index].criterionIds.length
+    && challenge.successCriteria.every((criterion, criterionIndex) => criterion.id === expected[index].criterionIds[criterionIndex]));
+}
 
 export const lessonThreeChallenge = {
   id: "portrait-depth-intention",
@@ -399,8 +433,9 @@ function validateLessonFive() {
   const filmSources = lessonFive.sources.filter(({ publisher }) => publisher === "Kodak" || publisher === "Ilford Photo");
   const validSources = lessonFive.sources.every(({ title, publisher, url }) => title.trim() && publisher.trim() && url.startsWith("https://"));
   const filmChallenges = Object.values(filmConstraintChallenges);
+  const positionalFilmChallenges = Object.entries(filmConstraintChallenges).map(([key, challenge]) => ({ key, ...challenge }));
   const validSceneRelationships = filmConstraintChallenges.depth.sceneId === windowLightPortraitScene.id && filmConstraintChallenges.motion.sceneId === movingCyclistScene.id;
-  const validFilmChallenges = validSceneRelationships && new Set(filmChallenges.map(({ id }) => id)).size === filmChallenges.length && filmChallenges.every((challenge) => challenge.lessonSlug === lessonFive.slug && challenge.rollIso === challenge.meterReference.iso && challenge.controls.aperture.length >= 3 && challenge.controls.shutter.length >= 3 && challenge.successCriteria.length === 3 && new Set(challenge.successCriteria.map(({ id }) => id)).size === challenge.successCriteria.length && challenge.successCriteria.every(({ feedback }) => Object.values(feedback).every((text) => text.trim())) && challenge.tradeoffFeedback.trim());
+  const validFilmChallenges = validSceneRelationships && validateFilmChallengeShape(positionalFilmChallenges) && filmChallenges.every((challenge) => challenge.lessonSlug === lessonFive.slug && challenge.rollIso === challenge.meterReference.iso && challenge.controls.aperture.length >= 3 && challenge.controls.shutter.length >= 3 && challenge.successCriteria.every(({ feedback }) => Object.values(feedback).every((text) => text.trim())) && challenge.tradeoffFeedback.trim());
   if (!lessons.some(({ slug }) => slug === lessonFive.slug) || lessonFiveChallenge.sceneId !== dimIndoorPerformanceScene.id || sourceUrls.size < 5 || filmSources.length < 2 || !validSources || !validFilmChallenges || asset.file !== dimIndoorPerformanceScene.sourceAsset || !asset.photographer.trim() || !asset.sourceUrl.startsWith("https://") || !asset.licenseUrl.startsWith("https://") || asset.noiseAssets.length === 0 || !validNoiseCalibration) {
     throw new Error("Lesson 5 curriculum, provenance, and calibrated noise assets must be complete.");
   }
@@ -464,6 +499,17 @@ function validateLessonSix() {
   }
 }
 
+function validateLessonSeven() {
+  const controls = exposureModeScene.limits;
+  const validLimits = Object.values(controls).every((values) => values.length >= 3 && values.every((value) => Number.isFinite(value) && value > 0));
+  const validCriteria = lessonSevenChallenge.successCriteria.length >= 2
+    && new Set(lessonSevenChallenge.successCriteria.map(({ id }) => id)).size === lessonSevenChallenge.successCriteria.length
+    && lessonSevenChallenge.successCriteria.every((criterion) => criterion.id.trim() && criterion.label.trim() && Object.values(criterion.feedback).every((text) => text.trim()));
+  if (!lessons.some(({ slug }) => slug === lessonSeven.slug) || lessonSevenChallenge.lessonSlug !== lessonSeven.slug || !lessonSevenChallenge.id.trim() || !lessonSevenChallenge.photographicIntention.trim() || lessonSeven.sources.length < 3 || new Set(lessonSeven.sources.map(({ url }) => url)).size !== lessonSeven.sources.length || lessonSevenChallenge.sceneId !== movingCyclistScene.id || !validCriteria || !validLimits) {
+    throw new Error("Lesson 7 Exposure Modes, sources, Curated Scene, and Challenge must be complete.");
+  }
+}
+
 function defineLearningPath<const T extends readonly Lesson[]>(items: T): T {
   const slugs = new Set(items.map(({ slug }) => slug));
   const numbers = new Set(items.map(({ number }) => number));
@@ -484,10 +530,10 @@ export const lessons = defineLearningPath([
   { slug: "choosing-settings", number: "08", title: "Choosing settings for an intention", summary: "Bring every Exposure Control together.", time: "10 min" },
 ] as const);
 
-const allCurriculumSources: readonly CurriculumSource[] = [...lessonOne.sources, ...lessonTwo.sources, ...lessonThree.sources, ...lessonFour.sources, ...lessonFive.sources, ...lessonSix.sources];
+const allCurriculumSources: readonly CurriculumSource[] = [...lessonOne.sources, ...lessonTwo.sources, ...lessonThree.sources, ...lessonFour.sources, ...lessonFive.sources, ...lessonSix.sources, ...lessonSeven.sources];
 export const curriculumSources: readonly CurriculumSource[] = [...new Map(allCurriculumSources.map((source) => [source.url, source])).values()];
 
-[lessonTwo, lessonThree, lessonFour, lessonFive].forEach((lesson) => validateCurriculumSources(lesson.sources, `Lesson ${lesson.slug}`));
+[lessonTwo, lessonThree, lessonFour, lessonFive, lessonSeven].forEach((lesson) => validateCurriculumSources(lesson.sources, `Lesson ${lesson.slug}`));
 
 validateLessonOne();
 validateLessonTwo();
@@ -495,3 +541,4 @@ validateLessonThree();
 validateLessonFour();
 validateLessonFive();
 validateLessonSix();
+validateLessonSeven();
