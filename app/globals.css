@@ -241,5 +241,5 @@ h1 { max-width: 12ch; margin: 0; font-size: clamp(3rem, 6vw, 5.5rem); font-weigh
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
-  .metering-preview .shutter-curtain { animation-duration: 210ms !important; }
+  .metering-preview .shutter-curtain { animation: none !important; transform: none; opacity: .65; }
 }

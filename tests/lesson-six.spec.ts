@@ -104,8 +104,20 @@ test("Bright Snow and Dark Stage Challenges reward deliberate departures from me
   await expect(page.getByRole("heading", { name: "Challenge complete" })).toHaveCount(2);
 });
 
-test("metering controls and nonvisual Histogram evidence remain accessible", async ({ page }) => {
-  await page.addInitScript(() => Object.defineProperty(CSS, "supports", { configurable: true, value: () => false }));
+test("reduced motion uses stationary capture dimming", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/lessons/meter-and-histogram");
+  await page.getByRole("button", { name: "Take Bright Snow photo" }).click();
+  const curtain = page.getByTestId("shutter-curtain").first();
+  await expect(curtain).toHaveCSS("animation-name", "none");
+  await expect(curtain).toHaveCSS("opacity", "0.65");
+});
+
+test("metering controls, fallback evidence, and evaluation survive canvas readback failure", async ({ page }) => {
+  await page.addInitScript(() => Object.defineProperty(CanvasRenderingContext2D.prototype, "getImageData", {
+    configurable: true,
+    value: () => { throw new DOMException("Canvas readback blocked", "SecurityError"); },
+  }));
   await page.goto("/lessons/meter-and-histogram");
   const control = page.getByLabel("Guided shutter speed");
   await control.focus();
@@ -114,6 +126,8 @@ test("metering controls and nonvisual Histogram evidence remain accessible", asy
   await page.keyboard.press("ArrowDown");
   await expect(page.getByTestId("histogram-summary").first()).not.toBeEmpty();
   await expect(page.getByText(/visual canvas rendering is unavailable/i).first()).toBeVisible();
+  await page.getByRole("button", { name: "Take Bright Snow photo" }).click();
+  await expect(page.getByText("Criterion Status")).toBeVisible();
 });
 
 test("representative highlight and shadow states remain readable in both themes", async ({ page }) => {

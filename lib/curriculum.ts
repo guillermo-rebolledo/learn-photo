@@ -390,7 +390,21 @@ function validateLessonSix() {
     && asset.sourceUrl.startsWith("https://")
     && asset.licenseUrl.startsWith("https://")
     && asset.licenseVerifiedDate === "2026-07-18");
-  const validScenes = scenes.every(({ scene }) => scene.id.trim()
+  const validScenes = scenes.every(({ scene }) => {
+    const detail = scene.calibration.detail;
+    const validHighlightCalibration = Number.isFinite(detail.achievedHighlightClippingThrough)
+      && Number.isFinite(detail.closeHighlightClippingThrough)
+      && detail.achievedHighlightClippingThrough >= 0
+      && detail.closeHighlightClippingThrough <= 1
+      && detail.achievedHighlightClippingThrough < detail.closeHighlightClippingThrough;
+    const validShadowCalibration = scene.id !== "dark-stage" || ("achievedShadowClippingThrough" in detail
+      && "closeShadowClippingThrough" in detail
+      && Number.isFinite(detail.achievedShadowClippingThrough)
+      && Number.isFinite(detail.closeShadowClippingThrough)
+      && detail.achievedShadowClippingThrough >= 0
+      && detail.closeShadowClippingThrough <= 1
+      && detail.achievedShadowClippingThrough < detail.closeShadowClippingThrough);
+    return scene.id.trim()
     && scene.name.trim()
     && scene.assumptions.focalLengthMm > 0
     && scene.assumptions.stability.trim()
@@ -408,10 +422,10 @@ function validateLessonSix() {
     && scene.calibration.intendedOffset.closeFrom <= scene.calibration.intendedOffset.achievedFrom
     && scene.calibration.intendedOffset.achievedFrom < scene.calibration.intendedOffset.achievedThrough
     && scene.calibration.intendedOffset.achievedThrough <= scene.calibration.intendedOffset.closeThrough
-    && scene.calibration.detail.achievedHighlightClippingThrough >= 0
-    && scene.calibration.detail.closeHighlightClippingThrough <= 1
-    && scene.calibration.detail.achievedHighlightClippingThrough < scene.calibration.detail.closeHighlightClippingThrough
-    && scene.calibration.representativeOffsets.length >= 3);
+    && validHighlightCalibration
+    && validShadowCalibration
+    && scene.calibration.representativeOffsets.length >= 3;
+  });
   const validIntentions = Object.values(lessonSixChallenges).every((challenge) => challenge.lessonSlug === lessonSix.slug
     && challenge.photographicIntention.trim()
     && challenge.successCriteria.length >= 2

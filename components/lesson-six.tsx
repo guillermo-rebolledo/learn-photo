@@ -27,9 +27,16 @@ export function LessonSix({ explanation }: { explanation: React.ReactNode }) {
   const guidedOffset = meterOffsetStops(guidedSettings, guidedScene.meterReference);
 
   useEffect(() => {
-    const context = document.createElement("canvas").getContext("2d");
-    setVisualEffectsAvailable(Boolean(context) && typeof CSS !== "undefined" && CSS.supports("display", "block"));
+    try {
+      setVisualEffectsAvailable(Boolean(document.createElement("canvas").getContext("2d")));
+    } catch {
+      setVisualEffectsAvailable(false);
+    }
   }, []);
+
+  function markVisualEffectsUnavailable() {
+    setVisualEffectsAvailable(false);
+  }
 
   function chooseGuidedScene(sceneId: MeteringSceneId) {
     setGuidedSceneId(sceneId);
@@ -45,7 +52,7 @@ export function LessonSix({ explanation }: { explanation: React.ReactNode }) {
         <p>Move away from the Meter Reference and watch the Rendered Result, meter, luminance Histogram, and text summary change together.</p>
       </div>
       <div className="simulator">
-        <MeteringPreview sceneId={guidedSceneId} settings={guidedSettings} eager />
+        <MeteringPreview sceneId={guidedSceneId} settings={guidedSettings} eager onRenderingUnavailable={markVisualEffectsUnavailable} />
         <div className="camera-controls">
           <label>Guided metering scene<select aria-label="Guided metering scene" value={guidedSceneId} onChange={(event) => chooseGuidedScene(event.target.value as MeteringSceneId)}><option value="bright-snow">Bright Snow</option><option value="dark-stage">Dark Stage</option></select></label>
           <label>Guided shutter speed<select aria-label="Guided shutter speed" value={guidedSettings.shutter} onChange={(event) => setGuidedSettings({ ...guidedSettings, shutter: Number(event.target.value) })}>{guidedScene.controls.shutter.map((shutter) => <option key={shutter} value={shutter}>1/{shutter}s</option>)}</select></label>
@@ -61,8 +68,8 @@ export function LessonSix({ explanation }: { explanation: React.ReactNode }) {
         <p>Make two deliberate decisions. Both Challenges accept several settings combinations, and neither intention lives at meter zero.</p>
       </div>
       <div className="metering-challenges">
-        <MeteringChallenge sceneId="bright-snow" />
-        <MeteringChallenge sceneId="dark-stage" />
+        <MeteringChallenge sceneId="bright-snow" onRenderingUnavailable={markVisualEffectsUnavailable} />
+        <MeteringChallenge sceneId="dark-stage" onRenderingUnavailable={markVisualEffectsUnavailable} />
       </div>
     </section>
 
@@ -72,7 +79,7 @@ export function LessonSix({ explanation }: { explanation: React.ReactNode }) {
   </div>;
 }
 
-function MeteringChallenge({ sceneId }: { sceneId: MeteringSceneId }) {
+function MeteringChallenge({ sceneId, onRenderingUnavailable }: { sceneId: MeteringSceneId; onRenderingUnavailable: () => void }) {
   const scene = meteringScenes[sceneId];
   const challenge = meteringChallenges[sceneId];
   const controls = scene.controls;
@@ -105,7 +112,7 @@ function MeteringChallenge({ sceneId }: { sceneId: MeteringSceneId }) {
 
   return <section className="metering-challenge" aria-labelledby={`${sceneId}-challenge-title`}>
     <header><p className="eyebrow">{scene.name}</p><h3 id={`${sceneId}-challenge-title`}>{challenge.photographicIntention}</h3></header>
-    <MeteringPreview sceneId={sceneId} settings={settings} capturing={capturing} onHistogramChange={setHistogram} />
+    <MeteringPreview sceneId={sceneId} settings={settings} capturing={capturing} onHistogramChange={setHistogram} onRenderingUnavailable={onRenderingUnavailable} />
     <div className="camera-controls metering-controls">
       <label>{scene.name} aperture<select aria-label={`${scene.name} aperture`} value={settings.aperture} onChange={(event) => update("aperture", event.target.value)}>{controls.aperture.map((value) => <option key={value} value={value}>f/{value}</option>)}</select></label>
       <label>{scene.name} shutter speed<select aria-label={`${scene.name} shutter speed`} value={settings.shutter} onChange={(event) => update("shutter", event.target.value)}>{controls.shutter.map((value) => <option key={value} value={value}>1/{value}s</option>)}</select></label>
@@ -117,7 +124,7 @@ function MeteringChallenge({ sceneId }: { sceneId: MeteringSceneId }) {
   </section>;
 }
 
-function MeteringPreview({ sceneId, settings, eager = false, capturing = false, onHistogramChange }: { sceneId: MeteringSceneId; settings: ExposureSettings; eager?: boolean; capturing?: boolean; onHistogramChange?: (histogram: LuminanceHistogram) => void }) {
+function MeteringPreview({ sceneId, settings, eager = false, capturing = false, onHistogramChange, onRenderingUnavailable }: { sceneId: MeteringSceneId; settings: ExposureSettings; eager?: boolean; capturing?: boolean; onHistogramChange?: (histogram: LuminanceHistogram) => void; onRenderingUnavailable: () => void }) {
   const scene = meteringScenes[sceneId];
   const meterOffset = meterOffsetStops(settings, scene.meterReference);
   const renderedFromSourceStops = meterOffset - scene.calibration.sourceRenderingOffset;
@@ -132,22 +139,53 @@ function MeteringPreview({ sceneId, settings, eager = false, capturing = false, 
       paintRenderedResult(source.pixels, source.width, source.height);
       return;
     }
-    const fallback = calibratedFallbackHistogram(sceneId, meterOffset);
-    setHistogram(fallback);
-    onHistogramChange?.(fallback);
+    sourcePixels.current = null;
+    if (!clearRenderedCanvas()) onRenderingUnavailable();
+    publishHistogram(calibratedFallbackHistogram(sceneId, meterOffset));
   }, [sceneId, renderedFromSourceStops]);
+
+  function publishHistogram(nextHistogram: LuminanceHistogram) {
+    setHistogram(nextHistogram);
+    onHistogramChange?.(nextHistogram);
+  }
+
+  function clearRenderedCanvas() {
+    const canvas = canvasRef.current;
+    if (!canvas) return true;
+    try {
+      const context = canvas.getContext("2d");
+      if (!context) return false;
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function useCalibratedFallback() {
+    sourcePixels.current = null;
+    clearRenderedCanvas();
+    publishHistogram(calibratedFallbackHistogram(sceneId, meterOffset));
+    onRenderingUnavailable();
+  }
 
   function paintRenderedResult(pixels: Uint8ClampedArray, width: number, height: number) {
     const renderedPixels = renderExposurePixels(pixels, renderedFromSourceStops);
-    const context = canvasRef.current?.getContext("2d");
-    if (context) {
-      canvasRef.current!.width = width;
-      canvasRef.current!.height = height;
+    try {
+      const canvas = canvasRef.current;
+      const context = canvas?.getContext("2d");
+      if (!canvas || !context) {
+        useCalibratedFallback();
+        return;
+      }
+      canvas.width = width;
+      canvas.height = height;
       context.putImageData(new ImageData(renderedPixels, width, height), 0, 0);
+    } catch {
+      useCalibratedFallback();
+      return;
     }
-    const derivedHistogram = buildLuminanceHistogram(renderedPixels, 0);
-    setHistogram(derivedHistogram);
-    onHistogramChange?.(derivedHistogram);
+    publishHistogram(buildLuminanceHistogram(renderedPixels, 0));
   }
 
   function deriveHistogram(image: HTMLImageElement) {
@@ -158,20 +196,23 @@ function MeteringPreview({ sceneId, settings, eager = false, capturing = false, 
       sourceCanvas.width = width;
       sourceCanvas.height = height;
       const context = sourceCanvas.getContext("2d", { willReadFrequently: true });
-      if (!context) return;
+      if (!context) {
+        useCalibratedFallback();
+        return;
+      }
       context.drawImage(image, 0, 0, width, height);
       const pixels = new Uint8ClampedArray(context.getImageData(0, 0, width, height).data);
       sourcePixels.current = { sceneId, pixels, width, height };
       paintRenderedResult(pixels, width, height);
     } catch {
-      // The calibrated fallback stays synchronized when pixel inspection is unavailable.
+      useCalibratedFallback();
     }
   }
 
   return <figure className={`lesson-preview metering-preview ${sceneId}`} data-testid="metering-rendered-result" data-meter-offset={meterOffset} aria-label={`Rendered Result for ${scene.name} at ${signedStops(meterOffset)}. ${summary}`}>
     <div className="lesson-preview-frame">
-      <Image key={scene.sourceAsset} src={`/images/${scene.sourceAsset}`} alt={sceneId === "bright-snow" ? "A broad snow-covered mountain landscape beneath a blue sky" : "A singer lit in violet and blue against a dark stage"} fill priority={eager} sizes="(max-width: 800px) 100vw, 58vw" onLoad={(event) => deriveHistogram(event.currentTarget)} />
-      <canvas ref={canvasRef} className="metering-canvas" aria-hidden />
+      <Image key={scene.sourceAsset} src={`/images/${scene.sourceAsset}`} alt={sceneId === "bright-snow" ? "A broad snow-covered mountain landscape beneath a blue sky" : "A singer lit in violet and blue against a dark stage"} fill priority={eager} sizes="(max-width: 800px) 100vw, 58vw" onLoad={(event) => deriveHistogram(event.currentTarget)} onError={useCalibratedFallback} />
+      <canvas key={`canvas-${scene.sourceAsset}`} ref={canvasRef} className="metering-canvas" aria-hidden />
       {capturing && <span className="shutter-curtain" data-testid="shutter-curtain" aria-hidden />}
       <div className="preview-readout"><span>{scene.name}</span><strong>f/{settings.aperture} · 1/{settings.shutter}s · ISO {settings.iso}</strong></div>
     </div>
