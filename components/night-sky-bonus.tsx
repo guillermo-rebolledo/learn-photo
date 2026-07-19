@@ -6,35 +6,57 @@ import { bulbDurations, evaluateNightSky, nightSkyChallenges, nightSkyExposureSt
 
 const storageKey = "learn-photo-night-sky";
 const defaults: Record<NightSkyIntention, NightSkySettings> = { sharp: nightSkyChallenges.sharp.defaults, trails: nightSkyChallenges.trails.defaults };
+const intentions = ["sharp", "trails"] as const;
+const apertures = [2, 2.8, 4, 5.6] as const;
+const isIntention = (value: unknown): value is NightSkyIntention => intentions.includes(value as NightSkyIntention);
+const isSettings = (value: unknown): value is NightSkySettings => {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<NightSkySettings>;
+  return bulbDurations.includes(candidate.duration as NightSkySettings["duration"]) && apertures.includes(candidate.aperture as NightSkySettings["aperture"]) && [200, 400, 800, 1600, 3200].includes(candidate.iso as number);
+};
+const isSavedProgress = (value: unknown): value is { settings: Record<NightSkyIntention, NightSkySettings>; attempted: NightSkyIntention[]; captures?: Record<NightSkyIntention, boolean> } => {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as { settings?: Partial<Record<NightSkyIntention, unknown>>; attempted?: unknown[]; captures?: Partial<Record<NightSkyIntention, unknown>> };
+  const validCaptures = candidate.captures === undefined || intentions.every((path) => typeof candidate.captures?.[path] === "boolean");
+  return intentions.every((path) => isSettings(candidate.settings?.[path])) && Array.isArray(candidate.attempted) && candidate.attempted.every(isIntention) && validCaptures;
+};
 
 export function NightSkyBonus() {
   const [settings, setSettings] = useState(defaults);
   const [attempted, setAttempted] = useState<NightSkyIntention[]>([]);
+  const [captures, setCaptures] = useState<Record<NightSkyIntention, boolean>>({ sharp: false, trails: false });
   const [hydrated, setHydrated] = useState(false);
   const [effects, setEffects] = useState(true);
 
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(storageKey) ?? "null");
-      if (saved?.settings) setSettings(saved.settings);
-      if (Array.isArray(saved?.attempted)) setAttempted(saved.attempted);
+      if (isSavedProgress(saved)) {
+        setSettings(saved.settings);
+        setAttempted(saved.attempted);
+        setCaptures(saved.captures ?? {
+          sharp: saved.attempted.includes("sharp") && evaluateNightSky("sharp", saved.settings.sharp).complete,
+          trails: saved.attempted.includes("trails") && evaluateNightSky("trails", saved.settings.trails).complete,
+        });
+      }
       setEffects(localStorage.getItem("learn-photo-visual-effects") !== "off");
     } catch { /* Invalid bonus Progress is ignored. */ }
     setHydrated(true);
   }, []);
 
   const results = { sharp: evaluateNightSky("sharp", settings.sharp), trails: evaluateNightSky("trails", settings.trails) };
-  const completed = attempted.filter((path) => results[path].complete);
-  const bonusComplete = completed.includes("sharp") && completed.includes("trails");
+  const bonusComplete = captures.sharp && captures.trails;
 
   function update(path: NightSkyIntention, field: keyof NightSkySettings, value: number) {
     setSettings((current) => ({ ...current, [path]: { ...current[path], [field]: value } }));
   }
   function attempt(path: NightSkyIntention) {
     const nextAttempted = [...new Set([...attempted, path])];
+    const nextCaptures = { ...captures, [path]: results[path].complete };
     setAttempted(nextAttempted);
-    localStorage.setItem(storageKey, JSON.stringify({ settings, attempted: nextAttempted }));
-    const nextComplete = nextAttempted.every((item) => evaluateNightSky(item, settings[item]).complete) && nextAttempted.length === 2;
+    setCaptures(nextCaptures);
+    localStorage.setItem(storageKey, JSON.stringify({ settings, attempted: nextAttempted, captures: nextCaptures }));
+    const nextComplete = nextCaptures.sharp && nextCaptures.trails;
     try {
       const progress = JSON.parse(localStorage.getItem("learn-photo-progress") ?? "{}");
       localStorage.setItem("learn-photo-progress", JSON.stringify({ ...progress, nightSkyComplete: nextComplete }));
@@ -77,7 +99,7 @@ function NightSkyPreview({ intention, settings, effects }: { intention: NightSky
   const brightness = Math.max(.45, Math.min(1.65, 2 ** exposure));
   const outcome = intention === "sharp" && settings.duration === 30 ? "Stars remain relatively sharp under these assumptions." : `${settings.duration / 60} ${settings.duration === 60 ? "minute shows" : "minutes show"} ${settings.duration >= 300 ? "deliberate extended" : "short"} star motion.`;
   return <figure className={`lesson-preview night-sky-preview ${effects ? "" : "no-night-sky-effects"}`} aria-label={`Rendered Result: ${settings.duration} seconds at f/${settings.aperture} with sensitivity ${settings.iso}. ${outcome}`}>
-    <div className="lesson-preview-frame"><Image src="/images/night-sky-960.jpg" alt="Milky Way and stars above silhouetted flowers and land" fill priority={intention === "sharp"} sizes="(max-width: 900px) 100vw, 55vw" style={{ filter: `brightness(${brightness})` }} /><Image data-testid={`${intention}-star-motion`} className="night-sky-trail-layer" src={`/images/night-sky-trails.svg#duration-${settings.duration}`} alt="" aria-hidden fill unoptimized sizes="(max-width: 900px) 100vw, 55vw" /><span data-testid={`${intention}-noise`} className="noise-layer" aria-hidden style={{ opacity: Math.max(0, Math.log2(settings.iso / 200) * .035) }} /></div>
+    <div className="lesson-preview-frame"><Image src="/images/night-sky-960.jpg" alt="Milky Way and stars above silhouetted flowers and land" fill preload={intention === "sharp"} sizes="(max-width: 900px) 100vw, 55vw" style={{ filter: `brightness(${brightness})` }} /><Image data-testid={`${intention}-star-motion`} className="night-sky-trail-layer" src={`/images/night-sky-trails.svg#duration-${settings.duration}`} alt="" aria-hidden fill unoptimized sizes="(max-width: 900px) 100vw, 55vw" /><span data-testid={`${intention}-noise`} className="noise-layer" aria-hidden style={{ opacity: Math.max(0, Math.log2(settings.iso / 200) * .035) }} /></div>
     <figcaption>{outcome} Exposure is {Math.abs(exposure) < .1 ? "at" : `${Math.abs(exposure)} Stops ${exposure > 0 ? "above" : "below"}`} the scene reference. {!effects && "Visual refinement is unavailable; the Source Photograph and this synchronized text remain usable."}</figcaption>
   </figure>;
 }

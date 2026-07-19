@@ -83,3 +83,33 @@ test("Night Sky Progress persists and rendering remains useful with reduced moti
   await expect(trails.getByRole("heading", { name: "Challenge complete" })).toBeVisible();
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("learn-photo-progress") ?? "null")?.nightSkyComplete)).toBe(true);
 });
+
+test("malformed Night Sky Progress is discarded without breaking the default Challenges", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("learn-photo-night-sky", JSON.stringify({ settings: {}, attempted: ["other"] })));
+  await page.goto("/night-sky");
+
+  const sharp = page.getByRole("region", { name: "Relatively sharp stars Challenge" });
+  await expect(sharp.getByLabel("Bulb Exposure duration")).toHaveValue("30");
+  await expect(sharp.getByLabel("Aperture")).toHaveValue("2.8");
+  await expect(sharp.getByLabel("ISO")).toHaveValue("3200");
+  await expect(sharp.getByRole("button", { name: "Take photo" })).toBeEnabled();
+});
+
+test("bonus completion follows captured Attempts rather than later control edits", async ({ page }) => {
+  await page.goto("/night-sky");
+  const sharp = page.getByRole("region", { name: "Relatively sharp stars Challenge" });
+  const trails = page.getByRole("region", { name: "Deliberate star trails Challenge" });
+
+  await sharp.getByLabel("Bulb Exposure duration").selectOption("600");
+  await sharp.getByRole("button", { name: "Take photo" }).click();
+  await expect(sharp.getByRole("heading", { name: "Review the result" })).toBeVisible();
+
+  await sharp.getByLabel("Bulb Exposure duration").selectOption("30");
+  await trails.getByRole("button", { name: "Take photo" }).click();
+  await expect(page.getByRole("heading", { name: "Night Sky bonus complete" })).toHaveCount(0);
+
+  await sharp.getByRole("button", { name: "Retry" }).click();
+  await expect(page.getByRole("heading", { name: "Night Sky bonus complete" })).toBeVisible();
+  await sharp.getByLabel("Bulb Exposure duration").selectOption("600");
+  await expect(page.getByRole("heading", { name: "Night Sky bonus complete" })).toBeVisible();
+});
