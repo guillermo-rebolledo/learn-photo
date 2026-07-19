@@ -14,6 +14,12 @@ export type CurriculumSource = {
   url: `https://${string}`;
 };
 
+export function validateCurriculumSources(sources: readonly CurriculumSource[], label: string) {
+  if (sources.length < 2 || new Set(sources.map(({ url }) => url)).size !== sources.length || sources.some(({ title, publisher, url }) => !title.trim() || !publisher.trim() || !url.startsWith("https://"))) {
+    throw new Error(`${label} requires at least two unique, secure Curriculum Sources.`);
+  }
+}
+
 type SuccessCriterion = {
   id: string;
   label: string;
@@ -87,6 +93,7 @@ export const lessonTwo = {
     { title: "Understanding shutter speed", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/c/tips-and-techniques/understanding-shutter-speed" },
     { title: "Understanding maximum aperture", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/c/tips-and-techniques/understanding-maximum-aperture" },
     { title: "ISO speed and exposure", publisher: "Canon", url: "https://www.canon-europe.com/pro/infobank/iso/" },
+    { title: "Kodak Essential Reference Guide for Filmmakers", publisher: "Kodak", url: "https://www.kodak.com/en/motion/page/essential-reference-guide-for-filmmakers/" },
   ] satisfies CurriculumSource[],
 } as const;
 
@@ -96,6 +103,7 @@ export const lessonThree = {
     { title: "Understanding maximum aperture", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/c/tips-and-techniques/understanding-maximum-aperture" },
     { title: "Depth of field", publisher: "Cambridge in Colour", url: "https://www.cambridgeincolour.com/tutorials/depth-of-field.htm" },
     { title: "Depth of field explained", publisher: "Canon", url: "https://www.canon-europe.com/get-inspired/tips-and-techniques/depth-of-field/" },
+    { title: "Kodak Essential Reference Guide for Filmmakers", publisher: "Kodak", url: "https://www.kodak.com/en/motion/page/essential-reference-guide-for-filmmakers/" },
   ] satisfies CurriculumSource[],
 } as const satisfies LessonDefinition;
 
@@ -105,6 +113,7 @@ export const lessonFour = {
     { title: "Understanding shutter speed", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/c/tips-and-techniques/understanding-shutter-speed" },
     { title: "Shutter speed", publisher: "Canon", url: "https://www.canon-europe.com/get-inspired/tips-and-techniques/shutter-speed/" },
     { title: "Camera shake and shutter speed", publisher: "Cambridge in Colour", url: "https://www.cambridgeincolour.com/tutorials/camera-shake.htm" },
+    { title: "Kodak Essential Reference Guide for Filmmakers", publisher: "Kodak", url: "https://www.kodak.com/en/motion/page/essential-reference-guide-for-filmmakers/" },
   ] satisfies CurriculumSource[],
 } as const satisfies LessonDefinition;
 
@@ -139,6 +148,8 @@ export const lessonFive = {
     { title: "Understanding ISO sensitivity", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/c/tips-and-techniques/understanding-iso-sensitivity" },
     { title: "ISO speed and exposure", publisher: "Canon", url: "https://www.canon-europe.com/pro/infobank/iso/" },
     { title: "Digital camera noise", publisher: "Cambridge in Colour", url: "https://www.cambridgeincolour.com/tutorials/image-noise.htm" },
+    { title: "Kodak Essential Reference Guide for Filmmakers", publisher: "Kodak", url: "https://www.kodak.com/en/motion/page/essential-reference-guide-for-filmmakers/" },
+    { title: "Beginner's Guide to film", publisher: "Ilford Photo", url: "https://www.ilfordphoto.com/beginners-guide" },
   ] satisfies CurriculumSource[],
 } as const satisfies LessonDefinition;
 
@@ -259,6 +270,12 @@ export const lessonFiveChallenge = {
   ],
 } as const;
 
+const filmCriteria = [
+  { id: "usable-exposure", label: "Usable exposure", essential: true, feedback: { achieved: "Aperture and shutter keep exposure usable.", close: "Exposure is close; rebalance aperture and shutter by one Stop.", missed: "The fixed-speed film receives too little or too much light." } },
+  { id: "photographic-intention", label: "Photographic Intention", essential: true, feedback: { achieved: "The chosen control supports the Photographic Intention.", close: "The intended result is close.", missed: "The chosen control conflicts with the Photographic Intention." } },
+  { id: "fixed-film-speed", label: "Fixed film speed", essential: true, feedback: { achieved: "Film speed stays fixed at ISO 400 across this roll.", close: "Film speed cannot be partly changed.", missed: "Unlike digital ISO, this roll’s film speed cannot change between photographs." } },
+] as const satisfies readonly SuccessCriterion[];
+
 export const windowLightPortraitScene = {
   id: "window-light-portrait",
   sourceAsset: "window-light-portrait-960.jpg",
@@ -267,6 +284,22 @@ export const windowLightPortraitScene = {
   meterReference: { aperture: 5.6, shutter: 60, iso: 400 },
   calibration: { shallowThrough: 2.8, deepFrom: 8, blurRadius: { shallow: 14, moderate: 8, deep: 0 }, representativeApertures: [2, 5.6, 11] },
 } as const satisfies PortraitScene;
+
+export const filmConstraintChallenges = {
+  depth: { id: "film-depth", lessonSlug: lessonFive.slug, sceneId: windowLightPortraitScene.id, label: "Preserve useful depth", photographicIntention: "Use f/4 or narrower while balancing the rendering.", rollIso: 400, meterReference: { aperture: 2.8, shutter: 125, iso: 400 }, controls: { aperture: [1.4, 2, 2.8, 4, 5.6], shutter: [30, 60, 125, 250, 500] }, successCriteria: filmCriteria, tradeoffFeedback: "The fixed roll speed leaves aperture and shutter to balance depth against Captured Light." },
+  motion: { id: "film-motion", lessonSlug: lessonFive.slug, sceneId: movingCyclistScene.id, label: "Freeze movement", photographicIntention: "Use 1/250s or faster while balancing the rendering.", rollIso: 400, meterReference: { aperture: 2.8, shutter: 125, iso: 400 }, controls: { aperture: [1.4, 2, 2.8, 4, 5.6], shutter: [30, 60, 125, 250, 500] }, successCriteria: filmCriteria, tradeoffFeedback: "The fixed roll speed leaves aperture and shutter to balance motion against Captured Light." },
+} as const;
+
+export function validateFilmChallengeShape(challenges: readonly { key: string; id: string; successCriteria: readonly { id: string }[] }[]) {
+  const expected = [
+    { key: "depth", id: "film-depth", criterionIds: ["usable-exposure", "photographic-intention", "fixed-film-speed"] },
+    { key: "motion", id: "film-motion", criterionIds: ["usable-exposure", "photographic-intention", "fixed-film-speed"] },
+  ] as const;
+  return challenges.length === expected.length && challenges.every((challenge, index) => challenge.key === expected[index].key
+    && challenge.id === expected[index].id
+    && challenge.successCriteria.length === expected[index].criterionIds.length
+    && challenge.successCriteria.every((criterion, criterionIndex) => criterion.id === expected[index].criterionIds[criterionIndex]));
+}
 
 export const lessonThreeChallenge = {
   id: "portrait-depth-intention",
@@ -397,7 +430,13 @@ function validateLessonFive() {
   const sourceUrls = new Set(lessonFive.sources.map(({ url }) => url));
   const noiseCalibration = dimIndoorPerformanceScene.calibration.noise;
   const validNoiseCalibration = noiseCalibration.length >= 2 && noiseCalibration.every(({ iso, opacity }, index, anchors) => Number.isFinite(iso) && Number.isFinite(opacity) && iso > 0 && opacity >= 0 && opacity <= 1 && (index === 0 || iso > anchors[index - 1].iso));
-  if (!lessons.some(({ slug }) => slug === lessonFive.slug) || lessonFiveChallenge.sceneId !== dimIndoorPerformanceScene.id || sourceUrls.size < 3 || asset.file !== dimIndoorPerformanceScene.sourceAsset || !asset.photographer.trim() || !asset.sourceUrl.startsWith("https://") || !asset.licenseUrl.startsWith("https://") || asset.noiseAssets.length === 0 || !validNoiseCalibration) {
+  const filmSources = lessonFive.sources.filter(({ publisher }) => publisher === "Kodak" || publisher === "Ilford Photo");
+  const validSources = lessonFive.sources.every(({ title, publisher, url }) => title.trim() && publisher.trim() && url.startsWith("https://"));
+  const filmChallenges = Object.values(filmConstraintChallenges);
+  const positionalFilmChallenges = Object.entries(filmConstraintChallenges).map(([key, challenge]) => ({ key, ...challenge }));
+  const validSceneRelationships = filmConstraintChallenges.depth.sceneId === windowLightPortraitScene.id && filmConstraintChallenges.motion.sceneId === movingCyclistScene.id;
+  const validFilmChallenges = validSceneRelationships && validateFilmChallengeShape(positionalFilmChallenges) && filmChallenges.every((challenge) => challenge.lessonSlug === lessonFive.slug && challenge.rollIso === challenge.meterReference.iso && challenge.controls.aperture.length >= 3 && challenge.controls.shutter.length >= 3 && challenge.successCriteria.every(({ feedback }) => Object.values(feedback).every((text) => text.trim())) && challenge.tradeoffFeedback.trim());
+  if (!lessons.some(({ slug }) => slug === lessonFive.slug) || lessonFiveChallenge.sceneId !== dimIndoorPerformanceScene.id || sourceUrls.size < 5 || filmSources.length < 2 || !validSources || !validFilmChallenges || asset.file !== dimIndoorPerformanceScene.sourceAsset || !asset.photographer.trim() || !asset.sourceUrl.startsWith("https://") || !asset.licenseUrl.startsWith("https://") || asset.noiseAssets.length === 0 || !validNoiseCalibration) {
     throw new Error("Lesson 5 curriculum, provenance, and calibrated noise assets must be complete.");
   }
 }
@@ -490,6 +529,11 @@ export const lessons = defineLearningPath([
   { slug: "exposure-modes", number: "07", title: "Exposure modes", summary: "Decide which choices belong to you or the Camera.", time: "9 min" },
   { slug: "choosing-settings", number: "08", title: "Choosing settings for an intention", summary: "Bring every Exposure Control together.", time: "10 min" },
 ] as const);
+
+const allCurriculumSources: readonly CurriculumSource[] = [...lessonOne.sources, ...lessonTwo.sources, ...lessonThree.sources, ...lessonFour.sources, ...lessonFive.sources, ...lessonSix.sources, ...lessonSeven.sources];
+export const curriculumSources: readonly CurriculumSource[] = [...new Map(allCurriculumSources.map((source) => [source.url, source])).values()];
+
+[lessonTwo, lessonThree, lessonFour, lessonFive, lessonSeven].forEach((lesson) => validateCurriculumSources(lesson.sources, `Lesson ${lesson.slug}`));
 
 validateLessonOne();
 validateLessonTwo();

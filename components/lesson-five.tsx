@@ -1,10 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
-import { dimIndoorPerformanceScene, lessonFive, lessonFiveChallenge } from "@/lib/curriculum";
+import { useEffect, useRef, useState } from "react";
+import { dimIndoorPerformanceScene, filmConstraintChallenges, lessonFive, lessonFiveChallenge } from "@/lib/curriculum";
 import { evaluatePerformanceAttempt, isoStops, noiseOutcome, performanceExposureStops, performanceMotion, type MotionIntention } from "@/lib/iso-model";
 import type { ExposureSettings } from "@/lib/exposure-model";
+import { evaluateFilmConstraint, filmExposureStops, type FilmIntention } from "@/lib/film-model";
+import { portraitDepth } from "@/lib/aperture-model";
+import { cyclistMotion } from "@/lib/shutter-model";
 
 const isos = [100, 200, 400, 800, 1600, 3200, 6400, 12800];
 const shutters = [30, 60, 125, 250, 500];
@@ -35,6 +38,7 @@ export function LessonFive({ explanation }: { explanation: React.ReactNode }) {
         <div className="camera-controls"><label>Guided ISO<select aria-label="Guided ISO" value={guidedIso} onChange={(event) => setGuidedIso(Number(event.target.value))}>{isos.map((iso) => <option key={iso} value={iso}>ISO {iso}</option>)}</select></label><p className="control-outcome" aria-live="polite">ISO {guidedIso} is {isoStops(guidedIso)} Stops above ISO 100. {guidedNoise.description} Captured Light is unchanged.</p></div>
       </div>
     </section>
+    <FilmConstraints />
     <section className="experiment" aria-labelledby="performance-challenge-title">
       <div className="experiment-heading"><div><p className="eyebrow">Challenge</p><h2 id="performance-challenge-title">Balance a dim performance</h2></div><p>Keep exposure usable, render the intended motion, and keep noise moderate at ISO 3200 or below. More than one combination can work.</p></div>
       <div className="simulator">
@@ -53,6 +57,166 @@ export function LessonFive({ explanation }: { explanation: React.ReactNode }) {
     <details className="sources"><summary>Sources and further reading</summary><ul>{lessonFive.sources.map((source) => <li key={source.url}><a href={source.url}>{source.title}</a> — {source.publisher}</li>)}</ul></details>
     <p className="photo-credit">Source Photograph: <a href="https://commons.wikimedia.org/wiki/File:Emanuel_Mendez_Mexican_violinist_performing.png">Gio Antonio</a> · <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a> · resized and layered for calibrated low-light demonstration · Challenge {lessonFiveChallenge.id}</p>
   </div>;
+}
+
+type FilmSettings = Record<FilmIntention, ExposureSettings>;
+type FilmFeedback = ReturnType<typeof evaluateFilmConstraint>;
+const initialFilmSettings: FilmSettings = {
+  depth: { aperture: 4, shutter: 60, iso: filmConstraintChallenges.depth.rollIso },
+  motion: { aperture: 2, shutter: 250, iso: filmConstraintChallenges.motion.rollIso },
+};
+
+function FilmConstraints() {
+  const [settings, setSettings] = useState<FilmSettings>(initialFilmSettings);
+  const [feedback, setFeedback] = useState<Partial<Record<FilmIntention, FilmFeedback>>>({});
+  const [previousFeedback, setPreviousFeedback] = useState<Partial<Record<FilmIntention, FilmFeedback>>>({});
+  const [currentAttempts, setCurrentAttempts] = useState<Partial<FilmSettings>>({});
+  const [previousAttempts, setPreviousAttempts] = useState<Partial<FilmSettings>>({});
+  const restored = useRef(false);
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("learn-photo-progress") ?? "{}");
+      const candidate = saved?.filmConstraintSettings;
+      if (candidate?.depth && candidate?.motion) {
+        setSettings({
+          depth: sanitizeFilmSettings("depth", candidate.depth, initialFilmSettings.depth),
+          motion: sanitizeFilmSettings("motion", candidate.motion, initialFilmSettings.motion),
+        });
+      }
+      setFeedback(sanitizeFilmFeedback(saved?.filmConstraintFeedback));
+      setPreviousFeedback(sanitizeFilmFeedback(saved?.filmConstraintPreviousFeedback));
+      setCurrentAttempts(sanitizeFilmAttempts(saved?.filmConstraintCurrentAttempts));
+      setPreviousAttempts(sanitizeFilmAttempts(saved?.filmConstraintPreviousAttempts));
+    } catch { /* Browser-local Progress can recover from malformed data. */ }
+    restored.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!restored.current) return;
+    try {
+      const saved = JSON.parse(localStorage.getItem("learn-photo-progress") ?? "{}");
+      localStorage.setItem("learn-photo-progress", JSON.stringify({ ...saved, lesson: lessonFive.slug, filmConstraintSettings: settings, filmConstraintFeedback: feedback, filmConstraintPreviousFeedback: previousFeedback, filmConstraintCurrentAttempts: currentAttempts, filmConstraintPreviousAttempts: previousAttempts }));
+    } catch {
+      try {
+        localStorage.setItem("learn-photo-progress", JSON.stringify({ lesson: lessonFive.slug, filmConstraintSettings: settings }));
+      } catch { /* Browser-local Progress is optional; keep both Challenges usable. */ }
+    }
+  }, [settings, feedback, previousFeedback, currentAttempts, previousAttempts]);
+
+  function update(intention: FilmIntention, control: "aperture" | "shutter", value: string) {
+    setSettings((current) => ({ ...current, [intention]: { ...current[intention], [control]: Number(value), iso: filmConstraintChallenges[intention].rollIso } }));
+    setFeedback((current) => withoutFilmEntry(current, intention));
+  }
+
+  function submit(intention: FilmIntention) {
+    const result = evaluateFilmConstraint(settings[intention], intention);
+    setPreviousFeedback((previous) => ({ ...previous, [intention]: feedback[intention] }));
+    setPreviousAttempts((previous) => ({ ...previous, [intention]: currentAttempts[intention] }));
+    setCurrentAttempts((current) => ({ ...current, [intention]: { ...settings[intention] } }));
+    setFeedback((current) => ({ ...current, [intention]: result }));
+    if (Object.values(result).every(({ status }) => status === "Achieved")) {
+      try {
+        const saved = JSON.parse(localStorage.getItem("learn-photo-progress") ?? "{}");
+        const completed = Array.isArray(saved.completedChallenges) ? saved.completedChallenges : [];
+        localStorage.setItem("learn-photo-progress", JSON.stringify({ ...saved, completedChallenges: [...new Set([...completed, filmConstraintChallenges[intention].id])] }));
+      } catch { /* Completion remains visible even if Progress cannot be written. */ }
+    }
+  }
+
+  return <section className="experiment" aria-labelledby="film-constraints-title">
+    <div className="experiment-heading"><div><p className="eyebrow">Film Constraint Challenges</p><h2 id="film-constraints-title">Solve without changing the roll</h2></div><p>Both Challenges load ISO 400 film. ISO stays fixed while you balance aperture and shutter speed; several combinations can satisfy each Photographic Intention.</p></div>
+    <div className="metering-challenges">
+      <FilmChallenge intention="depth" settings={settings.depth} result={feedback.depth} previousResult={previousFeedback.depth} currentAttempt={currentAttempts.depth} previousAttempt={previousAttempts.depth} onUpdate={update} onTake={() => submit("depth")} />
+      <FilmChallenge intention="motion" settings={settings.motion} result={feedback.motion} previousResult={previousFeedback.motion} currentAttempt={currentAttempts.motion} previousAttempt={previousAttempts.motion} onUpdate={update} onTake={() => submit("motion")} />
+    </div>
+  </section>;
+}
+
+function FilmChallenge({ intention, settings, result, previousResult, currentAttempt, previousAttempt, onUpdate, onTake }: { intention: FilmIntention; settings: ExposureSettings; result?: ReturnType<typeof evaluateFilmConstraint>; previousResult?: ReturnType<typeof evaluateFilmConstraint>; currentAttempt?: ExposureSettings; previousAttempt?: ExposureSettings; onUpdate: (intention: FilmIntention, control: "aperture" | "shutter", value: string) => void; onTake: () => void }) {
+  const label = intention === "depth" ? "Depth" : "Motion";
+  const challenge = filmConstraintChallenges[intention];
+  const complete = result && Object.values(result).every(({ status }) => status === "Achieved");
+  return <article className="metering-challenge">
+    <p className="eyebrow">{label} Film Constraint</p><h3>{challenge.label}</h3><p>{challenge.photographicIntention}</p>
+    <FilmConstraintPreview intention={intention} settings={settings} />
+    <div className="camera-controls">
+      <label>{label} Film Constraint aperture<select aria-label={`${label} Film Constraint aperture`} value={settings.aperture} onChange={(event) => onUpdate(intention, "aperture", event.target.value)}>{challenge.controls.aperture.map((value) => <option key={value} value={value}>f/{value}</option>)}</select></label>
+      <label>{label} Film Constraint shutter speed<select aria-label={`${label} Film Constraint shutter speed`} value={settings.shutter} onChange={(event) => onUpdate(intention, "shutter", event.target.value)}>{challenge.controls.shutter.map((value) => <option key={value} value={value}>1/{value}s</option>)}</select></label>
+      <label>{label} Film Constraint ISO<select aria-label={`${label} Film Constraint ISO`} value={challenge.rollIso} disabled><option value={challenge.rollIso}>ISO {challenge.rollIso} · fixed roll</option></select></label>
+      <button className="button primary-button capture-button" onClick={onTake}>Take {intention} Film Constraint photo</button>
+    </div>
+    {result && <div className="feedback" role="region" aria-label={`${label} Film Constraint feedback`} aria-live="polite"><p className="eyebrow">Criterion Status</p><h4>{complete ? "Challenge complete" : "Keep experimenting"}</h4><div className="criteria">{([ ["Usable exposure", result.exposure], ["Photographic Intention", result.intention], ["Fixed film speed", result.filmSpeed] ] as const).map(([criterionLabel, criterion]) => <article key={criterionLabel}><h4>{criterionLabel}</h4><strong className={`status status-${criterion.status.toLowerCase()}`}>{criterion.status}</strong><p>{criterion.explanation}</p></article>)}</div><p><strong>Tradeoff Feedback:</strong> Digital ISO can change between photographs; this Film Constraint is fixed at ISO 400 across this roll. {challenge.tradeoffFeedback}</p></div>}
+    {previousResult && previousAttempt && currentAttempt && <details><summary>Compare with previous Attempt</summary><p>Previous Attempt: f/{previousAttempt.aperture} · 1/{previousAttempt.shutter}s · ISO {previousAttempt.iso}. Current Attempt: f/{currentAttempt.aperture} · 1/{currentAttempt.shutter}s · ISO {currentAttempt.iso}.</p></details>}
+  </article>;
+}
+
+function FilmConstraintPreview({ intention, settings }: { intention: FilmIntention; settings: ExposureSettings }) {
+  const stops = filmExposureStops(settings, intention);
+  const brightness = Math.max(.4, Math.min(1.6, 2 ** stops));
+  const exposureText = Math.abs(stops) <= .12 ? "The selected aperture and shutter keep the Rendered Result near the scene reference." : `The Rendered Result is ${Math.abs(stops).toFixed(1)} Stops ${stops < 0 ? "darker" : "brighter"} than the scene reference.`;
+  if (intention === "depth") {
+    const depth = portraitDepth(settings.aperture);
+    return <figure className="lesson-preview"><div className="lesson-preview-frame portrait-preview" data-testid="depth-film-rendered-result" data-depth-band={depth.band}><Image src="/images/window-light-portrait-960.jpg" alt="A seated portrait in window light" fill sizes="(max-width: 800px) 100vw, 40vw" className="portrait-background" style={{ filter: `brightness(${brightness}) blur(${depth.blurRadius}px)`, transform: `scale(${1 + depth.blurRadius / 500})` }} /><Image src="/images/window-light-portrait-960.jpg" alt="" aria-hidden fill sizes="(max-width: 800px) 100vw, 40vw" className="portrait-subject" style={{ filter: `brightness(${brightness})` }} /><div className="preview-readout"><span>Window-Light Portrait · ISO 400 film</span><strong>f/{settings.aperture} · 1/{settings.shutter}s</strong></div></div><figcaption>{depth.description} {exposureText}</figcaption></figure>;
+  }
+  const motion = cyclistMotion(settings.shutter);
+  const copies = motion.band === "flowing" ? 3 : motion.band === "trace" ? 1 : 0;
+  return <figure className="lesson-preview cyclist-preview"><div className="lesson-preview-frame" data-testid="motion-film-rendered-result" data-motion-band={motion.band}><Image src="/images/moving-cyclist-960.jpg" alt="A cyclist moving along a road" fill sizes="(max-width: 800px) 100vw, 40vw" style={{ filter: `brightness(${brightness})` }} />{Array.from({ length: copies }, (_, index) => <Image key={index} src="/images/moving-cyclist-960.jpg" alt="" aria-hidden fill sizes="(max-width: 800px) 100vw, 40vw" className="cyclist-motion-echo" style={{ opacity: .28 - index * .05, transform: `translateX(${-motion.offset * (index + 1)}px)`, filter: `brightness(${brightness}) blur(${2.5 + index * 2}px)` }} />)}<div className="preview-readout"><span>Moving Cyclist · ISO 400 film</span><strong>f/{settings.aperture} · 1/{settings.shutter}s</strong></div></div><figcaption>{motion.description} {exposureText}</figcaption></figure>;
+}
+
+function sanitizeFilmSettings(intention: FilmIntention, candidate: Partial<ExposureSettings>, fallback: ExposureSettings): ExposureSettings {
+  const challenge = filmConstraintChallenges[intention];
+  return {
+    aperture: challenge.controls.aperture.includes(candidate.aperture as never) ? Number(candidate.aperture) : fallback.aperture,
+    shutter: challenge.controls.shutter.includes(candidate.shutter as never) ? Number(candidate.shutter) : fallback.shutter,
+    iso: challenge.rollIso,
+  };
+}
+
+function sanitizeFilmAttempts(candidate: unknown): Partial<FilmSettings> {
+  if (!isRecord(candidate)) return {};
+  const valid: Partial<FilmSettings> = {};
+  for (const intention of ["depth", "motion"] as const) {
+    const attempt = candidate[intention];
+    const challenge = filmConstraintChallenges[intention];
+    if (isRecord(attempt)
+      && challenge.controls.aperture.includes(attempt.aperture as never)
+      && challenge.controls.shutter.includes(attempt.shutter as never)
+      && attempt.iso === challenge.rollIso) {
+      valid[intention] = { aperture: Number(attempt.aperture), shutter: Number(attempt.shutter), iso: challenge.rollIso };
+    }
+  }
+  return valid;
+}
+
+function sanitizeFilmFeedback(candidate: unknown): Partial<Record<FilmIntention, FilmFeedback>> {
+  if (!isRecord(candidate)) return {};
+  const valid: Partial<Record<FilmIntention, FilmFeedback>> = {};
+  for (const intention of ["depth", "motion"] as const) {
+    const result = candidate[intention];
+    if (isFilmFeedback(result)) valid[intention] = result;
+  }
+  return valid;
+}
+
+function isFilmFeedback(candidate: unknown): candidate is FilmFeedback {
+  if (!isRecord(candidate)) return false;
+  return ["exposure", "intention", "filmSpeed"].every((key) => {
+    const criterion = candidate[key];
+    return isRecord(criterion)
+      && (criterion.status === "Achieved" || criterion.status === "Close" || criterion.status === "Missed")
+      && typeof criterion.explanation === "string";
+  });
+}
+
+function withoutFilmEntry<T>(values: Partial<Record<FilmIntention, T>>, intention: FilmIntention) {
+  const next = { ...values };
+  delete next[intention];
+  return next;
+}
+
+function isRecord(candidate: unknown): candidate is Record<string, unknown> {
+  return Boolean(candidate) && typeof candidate === "object" && !Array.isArray(candidate);
 }
 
 function PerformancePreview({ iso, shutter, noise, label, exposure = Math.log2(iso / dimIndoorPerformanceScene.meterReference.iso), eager = false }: { iso: number; shutter: number; noise: ReturnType<typeof noiseOutcome>; label: string; exposure?: number; eager?: boolean }) {
