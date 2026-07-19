@@ -65,7 +65,7 @@ type MeteringSceneDefinition<Id extends string> = {
     representativeOffsets: readonly number[];
   };
 };
-type MeteringChallengeDefinition<SceneId extends string> = {
+type ChallengeDefinition<SceneId extends string> = {
   id: string;
   lessonSlug: string;
   sceneId: SceneId;
@@ -152,6 +152,29 @@ export const lessonSix = {
   ] satisfies CurriculumSource[],
 } as const satisfies LessonDefinition;
 
+export const lessonSeven = {
+  slug: "exposure-modes",
+  sources: [
+    { title: "Camera modes", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/c/tips-and-techniques/camera-modes" },
+    { title: "Exposure compensation", publisher: "Canon", url: "https://www.canon-europe.com/get-inspired/tips-and-techniques/exposure-compensation/" },
+    { title: "Auto ISO sensitivity control", publisher: "Nikon", url: "https://onlinemanual.nikonimglib.com/z7II_z6II/en/09_menu_guide_03_05.html" },
+  ] satisfies CurriculumSource[],
+} as const satisfies LessonDefinition;
+
+export const exposureModeScene = {
+  id: movingCyclistScene.id,
+  meterReference: movingCyclistScene.meterReference,
+  limits: lessonFourControls,
+} as const;
+
+export const lessonSevenChallenge = {
+  id: "exposure-mode-moving-cyclist",
+  lessonSlug: lessonSeven.slug,
+  sceneId: movingCyclistScene.id,
+  photographicIntention: "Freeze the cyclist with usable exposure, regardless of which Exposure Mode divides the work.",
+  successCriteria: lessonFourChallenges.freeze.successCriteria,
+} as const satisfies ChallengeDefinition<typeof movingCyclistScene.id>;
+
 export const dimIndoorPerformanceScene = {
   id: "dim-indoor-performance",
   sourceAsset: "dim-indoor-performance-960.jpg",
@@ -207,7 +230,7 @@ export const lessonSixChallenges = {
       { id: "intended-tonal-rendering", label: "Bright Snow tonal rendering", essential: true, feedback: { achieved: "The snow remains intentionally bright without treating meter zero as the answer.", close: "The snow is close to its intended brightness, with a noticeable tonal compromise.", missed: "The snow is rendered against its naturally bright intention." } },
       { id: "highlight-detail", label: "Snow highlight detail", essential: true, feedback: { achieved: "The bright snow retains useful tonal separation.", close: "Some snow detail is compressed at the brightest limit.", missed: "Broad highlight Clipping removes too much distinguishable snow detail." } },
     ] satisfies SuccessCriterion[],
-  } satisfies MeteringChallengeDefinition<"bright-snow">,
+  } satisfies ChallengeDefinition<"bright-snow">,
   darkStage: {
     id: "dark-stage-intention",
     lessonSlug: lessonSix.slug,
@@ -217,7 +240,7 @@ export const lessonSixChallenges = {
       { id: "intended-tonal-rendering", label: "Dark Stage tonal rendering", essential: true, feedback: { achieved: "The stage remains intentionally dark without treating meter zero as the answer.", close: "The stage is close to its intended darkness, with a noticeable tonal compromise.", missed: "The stage is rendered against its naturally dark intention." } },
       { id: "performer-separation", label: "Performer and stage detail", essential: true, feedback: { achieved: "The lit performer remains separated from the intentionally dark surround.", close: "Clipping compresses some performer or stage separation.", missed: "Clipping removes too much distinguishable performer or stage detail." } },
     ] satisfies SuccessCriterion[],
-  } satisfies MeteringChallengeDefinition<"dark-stage">,
+  } satisfies ChallengeDefinition<"dark-stage">,
 } as const;
 
 export const meteringChallenges = {
@@ -437,6 +460,17 @@ function validateLessonSix() {
   }
 }
 
+function validateLessonSeven() {
+  const controls = exposureModeScene.limits;
+  const validLimits = Object.values(controls).every((values) => values.length >= 3 && values.every((value) => Number.isFinite(value) && value > 0));
+  const validCriteria = lessonSevenChallenge.successCriteria.length >= 2
+    && new Set(lessonSevenChallenge.successCriteria.map(({ id }) => id)).size === lessonSevenChallenge.successCriteria.length
+    && lessonSevenChallenge.successCriteria.every((criterion) => criterion.id.trim() && criterion.label.trim() && Object.values(criterion.feedback).every((text) => text.trim()));
+  if (!lessons.some(({ slug }) => slug === lessonSeven.slug) || lessonSevenChallenge.lessonSlug !== lessonSeven.slug || !lessonSevenChallenge.id.trim() || !lessonSevenChallenge.photographicIntention.trim() || lessonSeven.sources.length < 3 || new Set(lessonSeven.sources.map(({ url }) => url)).size !== lessonSeven.sources.length || lessonSevenChallenge.sceneId !== movingCyclistScene.id || !validCriteria || !validLimits) {
+    throw new Error("Lesson 7 Exposure Modes, sources, Curated Scene, and Challenge must be complete.");
+  }
+}
+
 function defineLearningPath<const T extends readonly Lesson[]>(items: T): T {
   const slugs = new Set(items.map(({ slug }) => slug));
   const numbers = new Set(items.map(({ number }) => number));
@@ -463,3 +497,4 @@ validateLessonThree();
 validateLessonFour();
 validateLessonFive();
 validateLessonSix();
+validateLessonSeven();
