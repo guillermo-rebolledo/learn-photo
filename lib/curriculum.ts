@@ -65,17 +65,10 @@ type MeteringSceneDefinition<Id extends string> = {
     representativeOffsets: readonly number[];
   };
 };
-type MeteringChallengeDefinition<SceneId extends string> = {
+type ChallengeDefinition<SceneId extends string> = {
   id: string;
   lessonSlug: string;
   sceneId: SceneId;
-  photographicIntention: string;
-  successCriteria: readonly SuccessCriterion[];
-};
-type ExposureModeChallengeDefinition = {
-  id: string;
-  lessonSlug: string;
-  sceneId: string;
   photographicIntention: string;
   successCriteria: readonly SuccessCriterion[];
 };
@@ -180,7 +173,7 @@ export const lessonSevenChallenge = {
   sceneId: movingCyclistScene.id,
   photographicIntention: "Freeze the cyclist with usable exposure, regardless of which Exposure Mode divides the work.",
   successCriteria: lessonFourChallenges.freeze.successCriteria,
-} as const satisfies ExposureModeChallengeDefinition;
+} as const satisfies ChallengeDefinition<typeof movingCyclistScene.id>;
 
 export const dimIndoorPerformanceScene = {
   id: "dim-indoor-performance",
@@ -237,7 +230,7 @@ export const lessonSixChallenges = {
       { id: "intended-tonal-rendering", label: "Bright Snow tonal rendering", essential: true, feedback: { achieved: "The snow remains intentionally bright without treating meter zero as the answer.", close: "The snow is close to its intended brightness, with a noticeable tonal compromise.", missed: "The snow is rendered against its naturally bright intention." } },
       { id: "highlight-detail", label: "Snow highlight detail", essential: true, feedback: { achieved: "The bright snow retains useful tonal separation.", close: "Some snow detail is compressed at the brightest limit.", missed: "Broad highlight Clipping removes too much distinguishable snow detail." } },
     ] satisfies SuccessCriterion[],
-  } satisfies MeteringChallengeDefinition<"bright-snow">,
+  } satisfies ChallengeDefinition<"bright-snow">,
   darkStage: {
     id: "dark-stage-intention",
     lessonSlug: lessonSix.slug,
@@ -247,7 +240,7 @@ export const lessonSixChallenges = {
       { id: "intended-tonal-rendering", label: "Dark Stage tonal rendering", essential: true, feedback: { achieved: "The stage remains intentionally dark without treating meter zero as the answer.", close: "The stage is close to its intended darkness, with a noticeable tonal compromise.", missed: "The stage is rendered against its naturally dark intention." } },
       { id: "performer-separation", label: "Performer and stage detail", essential: true, feedback: { achieved: "The lit performer remains separated from the intentionally dark surround.", close: "Clipping compresses some performer or stage separation.", missed: "Clipping removes too much distinguishable performer or stage detail." } },
     ] satisfies SuccessCriterion[],
-  } satisfies MeteringChallengeDefinition<"dark-stage">,
+  } satisfies ChallengeDefinition<"dark-stage">,
 } as const;
 
 export const meteringChallenges = {
