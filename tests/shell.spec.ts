@@ -26,12 +26,12 @@ test("Learning Path keeps all eight Lessons available", async ({ page }) => {
   await expect(path.getByRole("link", { name: /Choosing settings for an intention/ })).toBeEnabled();
 });
 
-test("unfinished destinations explain their preview state and offer a way onward", async ({ page }) => {
+test("Sandbox destination opens unrestricted exploration", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("link", { name: /Sandbox Preview/ }).click();
+  await page.getByRole("link", { name: "Sandbox" }).click();
 
-  await expect(page.getByRole("heading", { name: "Experiment freely, soon." })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Explore the Learning Path" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Explore exposure freely." })).toBeVisible();
+  await expect(page.getByRole("radiogroup", { name: "Curated Scene" }).getByRole("radio")).toHaveCount(6);
 });
 
 test("explicit theme override is browser-local", async ({ page }) => {
