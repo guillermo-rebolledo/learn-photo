@@ -73,6 +73,21 @@
     "licenseVerifiedDate": "2026-07-18",
     "modifications": "Resized local derivatives; exposure rendering and luminance Histogram are derived deterministically in the Conceptual Simulator."
   },
+  "nightSky": {
+    "file": "night-sky-960.jpg",
+    "derivatives": [
+      { "file": "night-sky-480.jpg", "maxDimension": 480 },
+      { "file": "night-sky-960.jpg", "maxDimension": 960 }
+    ],
+    "motionAssets": [{ "file": "night-sky-trails.svg", "role": "source-point-derived deterministic star-motion arcs", "calibration": "bright-star start points sampled from the 960 px Source Photograph; arc dash length scales from 3% at 30 seconds to 100% at 10 minutes" }],
+    "photographer": "NPS / Jacob W. Frank",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Milky_Way_and_starry_night_sky_(26972689115).jpg",
+    "license": "Public domain (U.S. National Park Service work)",
+    "licenseUrl": "https://commons.wikimedia.org/wiki/File:Milky_Way_and_starry_night_sky_(26972689115).jpg#Licensing",
+    "downloadDate": "2026-07-19",
+    "licenseVerifiedDate": "2026-07-19",
+    "modifications": "Resized and JPEG-optimized local derivatives; source-point-derived, duration-calibrated deterministic star-motion arc layer added for immediate Bulb Exposure rendering."
+  },
   "darkStage": {
     "file": "dark-stage-960.jpg",
     "derivatives": [

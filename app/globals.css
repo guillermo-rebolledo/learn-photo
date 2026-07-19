@@ -209,6 +209,18 @@ h1 { max-width: 12ch; margin: 0; font-size: clamp(3rem, 6vw, 5.5rem); font-weigh
 .capstone-histogram { height: 4rem; display: flex; align-items: end; gap: 2px; padding: .5rem 1rem; background: #101310; }
 .capstone-histogram span { flex: 1; min-height: 2px; background: #d8ded7; }
 .learning-path-complete { margin-top: 2rem; }
+.bonus-card { margin-top: 3rem; padding: clamp(1.5rem, 4vw, 3rem); border: 1px solid var(--line); background: var(--surface); }
+.bonus-card h3 { margin: 0; font-size: clamp(1.7rem, 3vw, 2.6rem); }
+.bonus-card > p:not(.eyebrow) { max-width: 46rem; color: var(--muted); }
+.bonus-card .button { margin-top: 1rem; }
+.night-sky-intro { margin-bottom: 5rem; }
+.night-sky-preview .lesson-preview-frame { aspect-ratio: 3 / 2; }
+.night-sky-preview img { object-position: center; }
+.night-sky-trail-layer { z-index: 1; object-fit: cover; mix-blend-mode: screen; transition: opacity 140ms ease-out; }
+.night-sky-preview .noise-layer { z-index: 2; }
+.no-night-sky-effects .night-sky-trail-layer, .no-night-sky-effects .noise-layer { display: none; }
+.no-night-sky-effects .lesson-preview-frame img:first-child { filter: none !important; }
+@media (prefers-reduced-motion: reduce) { .night-sky-trail-layer { transition: none; } }
 .secondary-button { border: 1px solid var(--line); background: var(--background); cursor: pointer; }
 .comparison { padding: 1rem; background: var(--background); font-variant-numeric: tabular-nums; }
 .sources { max-width: 46rem; margin: 3rem 0; padding-block: 1rem; border-block: 1px solid var(--line); }

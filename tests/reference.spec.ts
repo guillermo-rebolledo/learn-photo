@@ -60,8 +60,9 @@ test("Reference consolidates Lesson sources and Source Photograph provenance", a
   await expect(sources.getByRole("link", { name: "Understanding ISO sensitivity" }).first()).toHaveAttribute("href", /^https:\/\//);
 
   const photographs = page.getByRole("region", { name: "Source Photograph credits" });
-  await expect(photographs.getByRole("article")).toHaveCount(6);
+  await expect(photographs.getByRole("article")).toHaveCount(7);
   await expect(photographs.getByRole("link", { name: "Ruth Hartnup" })).toHaveAttribute("href", /^https:\/\//);
+  await expect(photographs.getByRole("link", { name: "NPS / Jacob W. Frank" })).toHaveAttribute("href", /^https:\/\//);
   await expect(photographs).toContainText("License verified");
 });
 
