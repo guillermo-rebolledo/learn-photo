@@ -27,6 +27,19 @@ test("compensation and optional Auto ISO change only Camera-assigned controls", 
   await expect(page.getByLabel("Learner iso")).toBeDisabled();
 });
 
+test("Auto ISO unlocks only after an attempt with learner-selected ISO", async ({ page }) => {
+  await page.goto("/lessons/exposure-modes");
+  const autoIso = page.getByLabel(/Auto ISO/);
+
+  await page.getByRole("radio", { name: "Auto" }).check();
+  await page.getByRole("button", { name: "Take photo" }).click();
+  await expect(autoIso).toBeDisabled();
+
+  await page.getByRole("radio", { name: "Manual (M)" }).check();
+  await page.getByRole("button", { name: "Take photo" }).click();
+  await expect(autoIso).toBeEnabled();
+});
+
 test("Challenge assesses the cyclist intention and accepts outcomes from different modes", async ({ page }) => {
   await page.goto("/lessons/exposure-modes");
   await page.getByRole("radio", { name: "Shutter Priority (S / Tv)" }).check();

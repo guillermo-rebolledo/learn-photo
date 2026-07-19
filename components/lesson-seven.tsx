@@ -50,7 +50,10 @@ export function LessonSeven({ explanation }: { explanation: React.ReactNode }) {
           <label>Exposure Compensation<select aria-label="Exposure Compensation" value={compensation} disabled={mode === "M"} onChange={(event) => { setCompensation(Number(event.target.value)); setFeedback(null); }}>{[-2, -1, 0, 1, 2].map((value) => <option key={value} value={value}>{value > 0 ? "+" : ""}{value} Stop{Math.abs(value) === 1 ? "" : "s"}</option>)}</select></label>
           <label className="auto-iso-control"><input type="checkbox" checked={autoIso} disabled={!hasManualIsoAttempt} onChange={(event) => { setAutoIso(event.target.checked); setFeedback(null); }} />Auto ISO (optional digital behavior)</label>
           {!hasManualIsoAttempt && <p className="control-outcome">Available after your first manual-ISO Attempt.</p>}
-          <button className="button primary-button capture-button" onClick={() => { setFeedback(evaluateCyclistAttempt(resolved.settings, "freeze")); setHasManualIsoAttempt(true); }}>Take photo</button>
+          <button className="button primary-button capture-button" onClick={() => {
+            setFeedback(evaluateCyclistAttempt(resolved.settings, "freeze"));
+            if (!resolved.cameraControls.includes("iso")) setHasManualIsoAttempt(true);
+          }}>Take photo</button>
         </div>
       </div>
       <p className="control-outcome" aria-live="polite">{resolved.cameraControls.length ? `Camera selects ${resolved.cameraControls.join(", ")}.` : "The Learner selects every Exposure Control."} ISO begins manual; Auto ISO is off until you enable it.</p>
