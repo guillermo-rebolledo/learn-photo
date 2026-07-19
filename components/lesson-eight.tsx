@@ -84,7 +84,7 @@ export function LessonEight() {
                 <label>{prefix} aperture<select aria-label={`${prefix} aperture`} disabled={!hydrated} value={settings[path].aperture} onChange={(event) => update(path, "aperture", Number(event.target.value))}>{definition.controls.aperture.map((value) => <option key={value} value={value}>f/{value}</option>)}</select></label>
                 <label>{prefix} shutter<select aria-label={`${prefix} shutter`} disabled={!hydrated} value={settings[path].shutter} onChange={(event) => update(path, "shutter", Number(event.target.value))}>{definition.controls.shutter.map((value) => <option key={value} value={value}>1/{value}s</option>)}</select></label>
                 <label>{prefix} ISO<select aria-label={`${prefix} ISO`} disabled={!hydrated || path === "depth"} value={settings[path].iso} onChange={(event) => update(path, "iso", Number(event.target.value))}>{definition.controls.iso.map((value) => <option key={value} value={value}>ISO {value}</option>)}</select>{path === "depth" && <span>Fixed across the roll</span>}</label>
-                <button className="button primary-button capture-button" onClick={() => attempt(path)}>{result ? "Retry" : "Take photo"}</button>
+                <button className="button primary-button capture-button" disabled={!hydrated} onClick={() => attempt(path)}>{result ? "Retry" : "Take photo"}</button>
                 <button className="text-button" onClick={() => setHints((current) => [...new Set([...current, path])])}>Show hint</button>
                 {hints.includes(path) && <p className="capstone-hint"><strong>Hint:</strong> {definition.hint}</p>}
               </div>
