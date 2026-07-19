@@ -158,7 +158,7 @@ export const lessonSix = {
   sources: [
     { title: "Exposure Indicator and Exposure Compensation", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/photography-glossary" },
     { title: "Tips for Shooting in Cold Weather", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/c/tips-and-techniques/tips-for-shooting-in-cold-weather" },
-    { title: "EOS-1Ds Mark III instruction manual: brightness Histogram", publisher: "Canon", url: "https://files.canon-europe.com/files/soft31355/Manual/CUG_EOS1DsMKIII_EN_Flat.pdf" },
+    { title: "EOS R50 product manual: brightness Histogram", publisher: "Canon", url: "https://cam.start.canon/en/C011/manual/html/UG-07_Playback_0270.html" },
     { title: "Using the Highlight-Weighted Metering Mode", publisher: "Nikon", url: "https://www.nikonusa.com/learn-and-explore/c/products-and-innovation/using-the-highlight-weighted-metering-mode" },
   ] satisfies CurriculumSource[],
 } as const satisfies LessonDefinition;
