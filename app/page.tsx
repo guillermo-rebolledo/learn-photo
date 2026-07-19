@@ -36,6 +36,7 @@ export default function LearnPage() {
           ))}
         </ol>
         <LearningPathStatus />
+        <aside className="bonus-card"><p className="eyebrow">Launch-required bonus</p><h3>Night Sky and Bulb Exposure</h3><p>Compare relatively sharp stars with deliberate star trails—without waiting through a real long exposure.</p><Link className="button secondary-button" href="/night-sky">Open the Night Sky bonus <span aria-hidden="true">→</span></Link></aside>
       </section>
     </main>
   );

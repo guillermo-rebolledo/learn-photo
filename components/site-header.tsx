@@ -5,6 +5,7 @@ const navItems = [
   { href: "/", label: "Learn" },
   { href: "/lessons/light-and-exposure", label: "Lesson" },
   { href: "/sandbox", label: "Sandbox" },
+  { href: "/night-sky", label: "Night Sky" },
   { href: "/reference", label: "Reference" },
 ];
 
