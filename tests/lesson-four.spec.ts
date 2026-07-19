@@ -81,6 +81,17 @@ test("cyclist controls preserve touch sizing and textual fallback", async ({ pag
   await expect(page.getByText("Criterion Status")).toBeVisible();
 });
 
+test("reduced motion keeps stationary shutter feedback visible", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/lessons/shutter-speed-and-motion");
+
+  await page.getByRole("button", { name: "Take photo" }).click();
+  const curtain = page.getByTestId("shutter-curtain");
+  await expect(curtain).toHaveCSS("animation-name", "none");
+  await expect(curtain).toHaveCSS("transform", "none");
+  await expect(curtain).toHaveCSS("opacity", "0.65");
+});
+
 test("capture retains the immediately previous Attempt and provides Tradeoff Feedback", async ({ page }) => {
   await page.goto("/lessons/shutter-speed-and-motion");
   await page.getByRole("button", { name: "Take photo" }).click();

@@ -57,6 +57,7 @@ export function LessonOne({ explanation }: { explanation: React.ReactNode }) {
   const [progress, setProgress] = useState(defaults);
   const [hydrated, setHydrated] = useState(false);
   const [comparing, setComparing] = useState(false);
+  const [resetCount, setResetCount] = useState(0);
   const skipNextSave = useRef(false);
 
   useEffect(() => {
@@ -110,6 +111,7 @@ export function LessonOne({ explanation }: { explanation: React.ReactNode }) {
     skipNextSave.current = true;
     setComparing(false);
     setProgress(defaults);
+    setResetCount((count) => count + 1);
   }
 
   return (
@@ -177,7 +179,7 @@ export function LessonOne({ explanation }: { explanation: React.ReactNode }) {
       )}
 
       <details className="sources"><summary>Sources and further reading</summary><ul>{lessonOne.sources.map((source) => <li key={source.url}><a href={source.url}>{source.title}</a> — {source.publisher}</li>)}</ul></details>
-      <div className="lesson-actions"><button className="text-button" onClick={resetProgress}>Reset progress</button></div>
+      <div className="lesson-actions"><button className="text-button" onClick={resetProgress}>Reset progress</button>{resetCount > 0 && <p key={resetCount} role="status">Progress and theme preference reset.</p>}</div>
       <p className="photo-credit">Source Photograph: Ruth Hartnup · <a href="https://commons.wikimedia.org/wiki/File:Still_life_-_various_objects_on_table.jpg">CC BY 2.0</a></p>
     </>
   );

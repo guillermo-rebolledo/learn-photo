@@ -28,7 +28,7 @@ export function Reference() {
   ].filter(({ label, keywords }) => normalizedQuery && `${label} ${keywords}`.toLocaleLowerCase().includes(normalizedQuery));
   const resultCount = matchingTerms.length + quickSections.length + matchingSourceGroups.reduce((total, group) => total + group.sources.length, 0) + matchingPhotographs.length;
 
-  return <main id="main" className="simple-page reference-page">
+  return <main id="main" tabIndex={-1} className="simple-page reference-page">
     <p className="eyebrow">Reference</p>
     <h1>Exposure Stops</h1>
     <p className="lede">Search plain-language definitions, compare settings, or trace every Curriculum Source and Source Photograph without reading a full Lesson.</p>
