@@ -2,10 +2,10 @@ import Link from "next/link";
 import { ThemeSwitch } from "./theme-switch";
 
 const navItems = [
-  { href: "/", label: "Learn", state: null },
-  { href: "/lessons/light-and-exposure", label: "Lesson", state: null },
+  { href: "/", label: "Learn" },
+  { href: "/lessons/light-and-exposure", label: "Lesson" },
   { href: "/sandbox", label: "Sandbox" },
-  { href: "/reference", label: "Reference", state: "Preview" },
+  { href: "/reference", label: "Reference" },
 ];
 
 export function SiteHeader() {
@@ -21,7 +21,6 @@ export function SiteHeader() {
             <li key={item.label}>
               <Link href={item.href}>
                 {item.label}
-                {item.state && <span className="nav-state"> {item.state}</span>}
               </Link>
             </li>
           ))}
