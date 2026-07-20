@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
 import { NightSkyBonus } from "@/components/night-sky-bonus";
+
+export const metadata: Metadata = {
+  title: "Night Sky",
+  description: "Compare relatively sharp stars with intentional star trails using simulated Bulb Exposure presets.",
+  alternates: { canonical: "/night-sky" },
+  openGraph: { url: "/night-sky" },
+};
 
 export default function NightSkyPage() {
   return <main id="main" tabIndex={-1} className="lesson-page interactive-lesson-page night-sky-page">

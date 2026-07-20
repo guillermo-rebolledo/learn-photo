@@ -1,10 +1,27 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { siteUrl } from "@/lib/site";
 import { SiteHeader } from "@/components/site-header";
 
+const description = "Learn how camera settings shape light through calm, guided practice.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: { default: "Learn Photo", template: "%s · Learn Photo" },
-  description: "Learn how camera settings shape light through calm, guided practice.",
+  description,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: "Learn Photo",
+    title: "Learn Photo",
+    description,
+    url: "/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Learn Photo",
+    description,
+  },
 };
 
 const themeScript = `

@@ -53,3 +53,9 @@ Anonymous product analytics are explicitly non-blocking for launch. They may be 
 - Current Chrome, Safari, Firefox, and Edge receive smoke coverage.
 - Current iOS Safari and Android Chrome receive mobile coverage.
 - Unsupported visual effects degrade explicitly rather than presenting a misleading result or blocking the learner.
+
+## Release readiness
+
+- Production metadata (canonical links, Open Graph/social preview, robots, sitemap) is accurate and points at the deployed domain.
+- Landing, each top-level destination, a representative Challenge, Capstone completion, Reset progress, and Night Sky pass smoke tests against the deployed production build, not only the local build.
+- A rollback or previous-deployment recovery path is documented and does not depend on data migration. See [the release runbook](./release-runbook.md).

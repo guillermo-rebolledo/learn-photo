@@ -216,4 +216,4 @@ Night Sky is launch-required despite its lower implementation priority. Analytic
 - [ADR 0010: Limit the MVP to curated scenes](./adr/0010-curated-scenes-only-for-mvp.md)
 - [ADR 0011: Deploy the MVP to Vercel](./adr/0011-deploy-the-mvp-to-vercel.md)
 
-The detailed release checks live in [MVP Quality Bar](./QUALITY.md), the ubiquitous language in [Photography Learning Context](../CONTEXT.md), and the visual seed in [Learn Photo Design System](../DESIGN.md).
+The detailed release checks live in [MVP Quality Bar](./QUALITY.md), the production deploy and rollback path in [the release runbook](./release-runbook.md), the ubiquitous language in [Photography Learning Context](../CONTEXT.md), and the visual seed in [Learn Photo Design System](../DESIGN.md).
