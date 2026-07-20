@@ -26,7 +26,7 @@ export default async function LessonPage({ params }: { params: Promise<{ slug: s
   if (!lesson) notFound();
 
   return (
-    <main id="main" className={["01", "03", "04", "05", "06", "07", "08"].includes(lesson.number) ? "lesson-page interactive-lesson-page" : "simple-page lesson-page"}>
+    <main id="main" tabIndex={-1} className={["01", "03", "04", "05", "06", "07", "08"].includes(lesson.number) ? "lesson-page interactive-lesson-page" : "simple-page lesson-page"}>
       <LessonPositionTracker slug={lesson.slug} />
       <p className="eyebrow">Lesson {lesson.number} · {lesson.time}</p>
       <h1>{lesson.title}</h1>

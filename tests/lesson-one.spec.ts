@@ -48,8 +48,15 @@ test("unfinished settings restore and Reset progress clears learning state", asy
 
   await page.getByRole("button", { name: "Reset progress" }).click();
   await expect(page.getByLabel("ISO")).toHaveValue("400");
+  await expect(page.getByRole("status")).toHaveText("Progress and theme preference reset.");
   await expect(page.evaluate(() => localStorage.getItem("learn-photo-progress"))).resolves.toBeNull();
   await expect(page.evaluate(() => localStorage.getItem("learn-photo-theme"))).resolves.toBeNull();
+
+  const firstAnnouncement = page.getByRole("status");
+  const firstAnnouncementElement = await firstAnnouncement.elementHandle();
+  await page.getByRole("button", { name: "Reset progress" }).click();
+  await expect.poll(() => firstAnnouncementElement?.evaluate((element) => element.isConnected)).toBe(false);
+  await expect(page.getByRole("status")).toHaveText("Progress and theme preference reset.");
 });
 
 test("landing resumes the saved Lesson position", async ({ page }) => {

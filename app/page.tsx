@@ -6,7 +6,7 @@ import { LearningPathStatus } from "@/components/learning-path-status";
 
 export default function LearnPage() {
   return (
-    <main id="main">
+    <main id="main" tabIndex={-1}>
       <section className="hero" aria-labelledby="hero-title">
         <div className="hero-copy">
           <p className="eyebrow">Exposure Fundamentals · 8 short Lessons</p>
