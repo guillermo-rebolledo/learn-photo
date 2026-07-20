@@ -18,6 +18,7 @@ import {
   type LuminanceHistogram,
   type MeteringSceneId,
 } from "@/lib/metering-model";
+import { useSettledRender } from "./use-settled-render";
 
 export function LessonSix({ explanation }: { explanation: React.ReactNode }) {
   const [guidedSceneId, setGuidedSceneId] = useState<MeteringSceneId>("bright-snow");
@@ -128,21 +129,29 @@ function MeteringPreview({ sceneId, settings, eager = false, capturing = false, 
   const scene = meteringScenes[sceneId];
   const meterOffset = meterOffsetStops(settings, scene.meterReference);
   const renderedFromSourceStops = meterOffset - scene.calibration.sourceRenderingOffset;
+  const renderKey = `${sceneId}:${renderedFromSourceStops}`;
+  const { isSettled: renderIsSettled, settledValue: settledRenderStops } = useSettledRender(renderKey, renderedFromSourceStops);
   const [histogram, setHistogram] = useState(() => calibratedFallbackHistogram(sceneId, meterOffset));
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sourcePixels = useRef<{ sceneId: MeteringSceneId; pixels: Uint8ClampedArray; width: number; height: number } | null>(null);
-  const summary = summarizeHistogram(histogram);
+  const displayedHistogram = renderIsSettled ? histogram : calibratedFallbackHistogram(sceneId, meterOffset);
+  const summary = summarizeHistogram(displayedHistogram);
 
   useEffect(() => {
+    if (!renderIsSettled) onHistogramChange?.(displayedHistogram);
+  }, [renderIsSettled, renderKey]);
+
+  useEffect(() => {
+    if (!renderIsSettled) return;
     const source = sourcePixels.current;
     if (source?.sceneId === sceneId) {
-      paintRenderedResult(source.pixels, source.width, source.height);
+      paintRenderedResult(source.pixels, source.width, source.height, settledRenderStops);
       return;
     }
     sourcePixels.current = null;
     if (!clearRenderedCanvas()) onRenderingUnavailable();
     publishHistogram(calibratedFallbackHistogram(sceneId, meterOffset));
-  }, [sceneId, renderedFromSourceStops]);
+  }, [sceneId, renderIsSettled, settledRenderStops]);
 
   function publishHistogram(nextHistogram: LuminanceHistogram) {
     setHistogram(nextHistogram);
@@ -169,8 +178,8 @@ function MeteringPreview({ sceneId, settings, eager = false, capturing = false, 
     onRenderingUnavailable();
   }
 
-  function paintRenderedResult(pixels: Uint8ClampedArray, width: number, height: number) {
-    const renderedPixels = renderExposurePixels(pixels, renderedFromSourceStops);
+  function paintRenderedResult(pixels: Uint8ClampedArray, width: number, height: number, exposureStops: number) {
+    const renderedPixels = renderExposurePixels(pixels, exposureStops);
     try {
       const canvas = canvasRef.current;
       const context = canvas?.getContext("2d");
@@ -203,20 +212,20 @@ function MeteringPreview({ sceneId, settings, eager = false, capturing = false, 
       context.drawImage(image, 0, 0, width, height);
       const pixels = new Uint8ClampedArray(context.getImageData(0, 0, width, height).data);
       sourcePixels.current = { sceneId, pixels, width, height };
-      paintRenderedResult(pixels, width, height);
+      if (renderIsSettled) paintRenderedResult(pixels, width, height, settledRenderStops);
     } catch {
       useCalibratedFallback();
     }
   }
 
-  return <figure className={`lesson-preview metering-preview ${sceneId}`} data-testid="metering-rendered-result" data-meter-offset={meterOffset} aria-label={`Rendered Result for ${scene.name} at ${signedStops(meterOffset)}. ${summary}`}>
+  return <figure className={`lesson-preview metering-preview ${sceneId}`} data-testid="metering-rendered-result" data-meter-offset={meterOffset} data-render-quality={renderIsSettled ? "refined" : "preview"} aria-label={`Rendered Result for ${scene.name} at ${signedStops(meterOffset)}. ${summary}`}>
     <div className="lesson-preview-frame">
-      <Image key={scene.sourceAsset} src={`/images/${scene.sourceAsset}`} alt={sceneId === "bright-snow" ? "A broad snow-covered mountain landscape beneath a blue sky" : "A singer lit in violet and blue against a dark stage"} fill priority={eager} sizes="(max-width: 800px) 100vw, 58vw" onLoad={(event) => deriveHistogram(event.currentTarget)} onError={useCalibratedFallback} />
+      <Image key={scene.sourceAsset} src={`/images/${scene.sourceAsset}`} alt={sceneId === "bright-snow" ? "A broad snow-covered mountain landscape beneath a blue sky" : "A singer lit in violet and blue against a dark stage"} fill priority={eager} sizes="(max-width: 800px) 100vw, 58vw" onLoad={(event) => deriveHistogram(event.currentTarget)} onError={useCalibratedFallback} style={{ filter: renderIsSettled ? "none" : `brightness(${Math.max(.3, Math.min(1.8, 2 ** renderedFromSourceStops))})` }} />
       <canvas key={`canvas-${scene.sourceAsset}`} ref={canvasRef} className="metering-canvas" aria-hidden />
       {capturing && <span className="shutter-curtain" data-testid="shutter-curtain" aria-hidden />}
       <div className="preview-readout"><span>{scene.name}</span><strong>f/{settings.aperture} · 1/{settings.shutter}s · ISO {settings.iso}</strong></div>
     </div>
-    <Histogram histogram={histogram} summary={summary} />
+    <Histogram histogram={displayedHistogram} summary={summary} />
     <figcaption>{summary} <span className="metering-fallback">The visual canvas rendering is unavailable; the synchronized meter, luminance Histogram, text, and evaluation remain authoritative.</span></figcaption>
   </figure>;
 }

@@ -22,6 +22,46 @@ test("learner can explore all six Curated Scenes without Learning Path locks", a
   await expect(page.getByTestId("sandbox-rendered-result")).toHaveAttribute("data-scene", "moving-cyclist");
 });
 
+test("control input gets an immediate preview before photographic refinement settles", async ({ page }) => {
+  await page.goto("/sandbox");
+
+  const result = page.getByTestId("sandbox-rendered-result");
+  await expect(result).toHaveAttribute("data-render-quality", "refined");
+  await expect(result.getByTestId("sandbox-refined-image")).toHaveAttribute("src", /neutral-still-life-960\.jpg$/);
+
+  await page.getByLabel("Shutter speed").selectOption("30");
+
+  await expect(result).toHaveAttribute("data-shutter", "30");
+  await expect(result).toHaveAttribute("data-render-quality", "preview");
+  await expect(result.getByTestId("sandbox-preview-image")).toHaveAttribute("src", /neutral-still-life-480\.jpg$/);
+  await expect(result.getByTestId("sandbox-refined-image")).toHaveCount(0);
+
+  await expect(result).toHaveAttribute("data-render-quality", "refined");
+  await expect(result.getByTestId("sandbox-refined-image")).toHaveAttribute("src", /neutral-still-life-960\.jpg$/);
+});
+
+test("only the active Curated Scene requests photographic assets", async ({ page }) => {
+  const photographicRequests: string[] = [];
+  page.on("request", (request) => {
+    if (/\/images\/(?:neutral-still-life|window-light-portrait|moving-cyclist|dim-indoor-performance|bright-snow|dark-stage)-/.test(request.url())) {
+      photographicRequests.push(request.url());
+    }
+  });
+
+  await page.goto("/sandbox");
+  await expect(page.getByTestId("sandbox-rendered-result")).toHaveAttribute("data-render-quality", "refined");
+
+  expect(photographicRequests.length).toBeGreaterThan(0);
+  expect(photographicRequests.every((url) => url.includes("neutral-still-life"))).toBe(true);
+
+  await page.getByRole("radio", { name: "Moving Cyclist" }).check();
+  await expect(page.getByTestId("sandbox-rendered-result")).toHaveAttribute("data-scene", "moving-cyclist");
+  await expect(page.getByTestId("sandbox-rendered-result")).toHaveAttribute("data-render-quality", "refined");
+  expect(photographicRequests.some((url) => url.includes("moving-cyclist-480.jpg"))).toBe(true);
+  expect(photographicRequests.some((url) => url.includes("moving-cyclist-960.jpg"))).toBe(true);
+  expect(photographicRequests.some((url) => url.includes("window-light-portrait"))).toBe(false);
+});
+
 test("scale, Exposure Mode, meter, and optional Histogram stay synchronized", async ({ page }) => {
   await page.goto("/sandbox");
 

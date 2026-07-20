@@ -112,6 +112,7 @@ h1 { max-width: 12ch; margin: 0; font-size: clamp(3rem, 6vw, 5.5rem); font-weigh
 .iso-criteria { grid-template-columns: repeat(3, 1fr); }
 .metering-preview .lesson-preview-frame { aspect-ratio: 3 / 2; }
 .metering-canvas { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; }
+.metering-preview[data-render-quality="preview"] .metering-canvas { display: none; }
 .metering-preview .preview-readout { z-index: 2; }
 .histogram-panel { padding: .8rem 1rem 1rem; background: #101310; color: #f6f7f3; border-top: 1px solid #303630; }
 .histogram { display: block; width: 100%; height: 5.75rem; overflow: visible; border-bottom: 1px solid rgb(255 255 255 / .35); }
@@ -200,7 +201,7 @@ h1 { max-width: 12ch; margin: 0; font-size: clamp(3rem, 6vw, 5.5rem); font-weigh
 .capstone-challenges { display: grid; gap: 5rem; }
 .capstone-challenge { border-top: 1px solid var(--line); }
 .capstone-challenge > header { max-width: 48rem; padding: 2rem 0; }
-.capstone-challenge > header h3 { margin: 0 0 1rem; font-size: clamp(1.8rem, 4vw, 3rem); }
+.capstone-challenge > header h3 { margin: 0 0 1rem; overflow-wrap: anywhere; font-size: clamp(1.8rem, 4vw, 3rem); }
 .capstone-hint { margin: 0; color: var(--muted); font-size: .82rem; }
 .capstone-feedback { margin: 1rem 0 0; }
 .capstone-feedback small { color: var(--muted); font-weight: 500; }
@@ -238,6 +239,7 @@ h1 { max-width: 12ch; margin: 0; font-size: clamp(3rem, 6vw, 5.5rem); font-weigh
 .reference-settings { display: flex; justify-content: space-between; gap: 1rem; padding: 1rem; background: var(--surface-strong); font-variant-numeric: tabular-nums; }
 .equivalent-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; padding: 1.5rem; background: var(--surface); border: 1px solid var(--line); }
 .equivalent-controls label { display: grid; gap: .35rem; color: var(--muted); font-size: .78rem; font-weight: 700; }
+.equivalent-controls select { width: 100%; min-width: 0; }
 .equivalent-feedback { margin-top: 1.5rem; margin-bottom: 0; }
 .reference-page { width: min(100% - 2rem, 74rem); }
 .reference-page section { margin-block: 5rem; }
@@ -297,6 +299,7 @@ h1 { max-width: 12ch; margin: 0; font-size: clamp(3rem, 6vw, 5.5rem); font-weigh
 @media (max-width: 600px) {
   .hero { margin-bottom: 4.5rem; }
   .hero h1 { font-size: clamp(2.8rem, 14vw, 4rem); }
+  .interactive-lesson-page > h1 { font-size: clamp(2rem, 12vw, 3.5rem); overflow-wrap: normal; word-break: normal; }
   .lesson-link { grid-template-columns: 2rem minmax(0, 1fr) auto; gap: .8rem; }
   .lesson-time { display: none; }
   .lesson-arrow { grid-column: 3; grid-row: 1; }

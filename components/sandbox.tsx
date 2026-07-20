@@ -5,7 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { resolveExposureMode, type ExposureMode } from "@/lib/exposure-mode-model";
 import { buildLuminanceHistogram, summarizeHistogram, type LuminanceHistogram } from "@/lib/metering-model";
 import { formatShutter, nearestScaleSettings, type ExposureSettings } from "@/lib/exposure-scales";
-import { reconcileSceneSettings, sandboxExposureOffset, sandboxScenes, sceneCredit, sceneScale, type SandboxScale, type SandboxSceneId } from "@/lib/sandbox-model";
+import { reconcileSceneSettings, sandboxExposureOffset, sandboxScenes, sceneCredit, scenePreviewImage, sceneScale, type SandboxScale, type SandboxSceneId } from "@/lib/sandbox-model";
+import { useSettledRender } from "./use-settled-render";
 
 const modeNames: Record<ExposureMode, string> = { Auto: "Auto", P: "Program (P)", A: "Aperture Priority (A / Av)", S: "Shutter Priority (S / Tv)", M: "Manual (M)" };
 
@@ -35,14 +36,23 @@ export function Sandbox() {
   const [visualEffectsAvailable, setVisualEffectsAvailable] = useState(true);
   const scene = sandboxScenes.find((candidate) => candidate.id === sceneId) ?? sandboxScenes[0];
   const limits = sceneScale(scene, scaleName);
-  const imageRef = useRef<HTMLImageElement | null>(null);
+  const refinementGeneration = useRef(0);
   const resolved = resolveExposureMode({ mode, selected, scene: { meterReference: scene.meterReference, limits }, compensation, autoIso });
   const offset = sandboxExposureOffset(resolved.settings, scene);
   const credit = sceneCredit(scene);
+  const renderKey = `${scene.id}:${resolved.settings.aperture}:${resolved.settings.shutter}:${resolved.settings.iso}`;
+  const { isSettled: renderIsSettled } = useSettledRender(renderKey, renderKey);
+  const previewImage = scenePreviewImage(scene);
 
   useEffect(() => {
     setVisualEffectsAvailable(typeof CSS !== "undefined" && CSS.supports("filter", "brightness(1)"));
   }, []);
+
+  useEffect(() => {
+    refinementGeneration.current += 1;
+    setHistogram(null);
+    setHistogramUnavailable(false);
+  }, [renderKey]);
 
   function chooseScene(nextId: SandboxSceneId) {
     const nextScene = sandboxScenes.find((candidate) => candidate.id === nextId) ?? sandboxScenes[0];
@@ -66,7 +76,7 @@ export function Sandbox() {
   }
 
   const brightness = Math.max(.3, Math.min(1.8, 2 ** offset));
-  const publishHistogram = useCallback(async (image: HTMLImageElement, exposureStops: number, currentSceneId: SandboxSceneId, settings: ExposureSettings) => {
+  const publishHistogram = useCallback(async (image: HTMLImageElement, exposureStops: number, currentSceneId: SandboxSceneId, settings: ExposureSettings, generation: number) => {
     try {
       const canvas = document.createElement("canvas");
       canvas.width = 120; canvas.height = 80;
@@ -124,24 +134,35 @@ export function Sandbox() {
         drawingContext.globalAlpha = 1;
       }
       const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+      if (generation !== refinementGeneration.current) return;
       setHistogram(buildLuminanceHistogram(pixels, 0));
       setHistogramUnavailable(false);
-    } catch { setHistogram(null); setHistogramUnavailable(true); }
+    } catch {
+      if (generation !== refinementGeneration.current) return;
+      setHistogram(null);
+      setHistogramUnavailable(true);
+    }
   }, []);
 
-  useEffect(() => { if (imageRef.current) publishHistogram(imageRef.current, offset, scene.id, resolved.settings); }, [offset, scene.id, resolved.settings.aperture, resolved.settings.shutter, resolved.settings.iso, publishHistogram]);
-  const histogramSummary = histogram ? summarizeHistogram(histogram) : histogramUnavailable ? "The pixel-derived luminance Histogram is unavailable; the textual Rendered Result remains authoritative." : "The pixel-derived luminance Histogram is updating.";
+  const histogramSummary = histogram ? summarizeHistogram(histogram) : histogramUnavailable ? "The pixel-derived luminance Histogram is unavailable; the textual Rendered Result remains authoritative." : renderIsSettled ? "The pixel-derived luminance Histogram is updating." : "The responsive preview is active; the pixel-derived luminance Histogram will refine when input settles.";
   const histogramMax = histogram ? Math.max(...histogram.bins, 1) : 1;
-  const motionEchoes = motionEchoCountFor(scene.id, resolved.settings.shutter);
-  const portraitBlur = portraitBlurFor(scene.id, resolved.settings.aperture);
-  const noiseOpacity = noiseOpacityFor(scene.id, resolved.settings.iso);
+  const motionEchoes = renderIsSettled ? motionEchoCountFor(scene.id, resolved.settings.shutter) : 0;
+  const portraitBlur = renderIsSettled ? portraitBlurFor(scene.id, resolved.settings.aperture) : 0;
+  const noiseOpacity = renderIsSettled ? noiseOpacityFor(scene.id, resolved.settings.iso) : 0;
 
   return <div className={visualEffectsAvailable ? undefined : "no-sandbox-effects"}>
     <fieldset className="sandbox-scenes" role="radiogroup" aria-label="Curated Scene"><legend>Curated Scene</legend>{sandboxScenes.map((candidate) => <label key={candidate.id}><input type="radio" name="sandbox-scene" checked={scene.id === candidate.id} onChange={() => chooseScene(candidate.id)} />{candidate.name}</label>)}</fieldset>
     <p className="sandbox-adjustment" aria-live="polite">{adjustment}</p>
     <div className="simulator sandbox-simulator">
-      <figure className="lesson-preview sandbox-preview" data-testid="sandbox-rendered-result" data-scene={scene.id} data-shutter={resolved.settings.shutter} style={{ "--sandbox-brightness": brightness } as React.CSSProperties} aria-label={`Rendered Result for ${scene.name}. ${scene.outcome(resolved.settings, scene.meterReference)}`}>
-        <div className="lesson-preview-frame"><Image ref={imageRef} key={scene.image} src={`/images/${scene.image}`} alt={scene.alt} fill priority sizes="(max-width: 900px) 100vw, 65vw" onLoad={(event) => publishHistogram(event.currentTarget, offset, scene.id, resolved.settings)} style={{ filter: visualEffectsAvailable ? `brightness(${brightness}) blur(${portraitBlur}px)` : "none" }} />{portraitBlur > 0 && <Image className="sandbox-portrait-subject" src={`/images/${scene.image}`} alt="" aria-hidden fill priority sizes="(max-width: 900px) 100vw, 65vw" style={{ filter: `brightness(${brightness})` }} />}{Array.from({ length: motionEchoes }, (_, index) => <Image className="sandbox-cyclist-echo" key={index} src={`/images/${scene.image}`} alt="" aria-hidden fill priority sizes="(max-width: 900px) 100vw, 65vw" style={{ opacity: .26 - index * .05, transform: `translateX(${-18 * (index + 1)}px)`, filter: `brightness(${brightness}) blur(${3 + index * 2}px)` }} />)}{noiseOpacity > 0 && <span className="noise-layer" style={{ opacity: noiseOpacity }} />}<div className="preview-readout"><span>{scene.name}</span><strong>f/{resolved.settings.aperture} · {formatShutter(resolved.settings.shutter)} · ISO {resolved.settings.iso}</strong></div></div>
+      <figure className="lesson-preview sandbox-preview" data-testid="sandbox-rendered-result" data-scene={scene.id} data-shutter={resolved.settings.shutter} data-render-quality={renderIsSettled ? "refined" : "preview"} style={{ "--sandbox-brightness": brightness } as React.CSSProperties} aria-label={`Rendered Result for ${scene.name}. ${scene.outcome(resolved.settings, scene.meterReference)}`}>
+        <div className="lesson-preview-frame">
+          <Image data-testid="sandbox-preview-image" key={previewImage} src={`/images/${previewImage}`} alt={scene.alt} fill priority sizes="(max-width: 900px) 100vw, 65vw" style={{ filter: visualEffectsAvailable ? `brightness(${brightness})` : "none" }} />
+          {renderIsSettled && <Image data-testid="sandbox-refined-image" key={`${scene.image}:${renderKey}`} className="sandbox-refined-image" src={`/images/${scene.image}`} alt="" aria-hidden fill loading="eager" sizes="(max-width: 900px) 100vw, 65vw" onLoad={(event) => publishHistogram(event.currentTarget, offset, scene.id, resolved.settings, refinementGeneration.current)} style={{ filter: visualEffectsAvailable ? `brightness(${brightness}) blur(${portraitBlur}px)` : "none" }} />}
+          {renderIsSettled && portraitBlur > 0 && <Image className="sandbox-portrait-subject" src={`/images/${scene.image}`} alt="" aria-hidden fill loading="lazy" sizes="(max-width: 900px) 100vw, 65vw" style={{ filter: `brightness(${brightness})` }} />}
+          {renderIsSettled && Array.from({ length: motionEchoes }, (_, index) => <Image className="sandbox-cyclist-echo" key={index} src={`/images/${scene.image}`} alt="" aria-hidden fill loading="lazy" sizes="(max-width: 900px) 100vw, 65vw" style={{ opacity: .26 - index * .05, transform: `translateX(${-18 * (index + 1)}px)`, filter: `brightness(${brightness}) blur(${3 + index * 2}px)` }} />)}
+          {renderIsSettled && noiseOpacity > 0 && <span className="noise-layer" style={{ opacity: noiseOpacity }} />}
+          <div className="preview-readout"><span>{scene.name}</span><strong>f/{resolved.settings.aperture} · {formatShutter(resolved.settings.shutter)} · ISO {resolved.settings.iso}</strong></div>
+        </div>
         {showHistogram && <div className="histogram-panel" data-testid="sandbox-histogram">{histogram && <svg className="histogram" role="img" aria-label={`Luminance Histogram. ${histogramSummary}`} viewBox={`0 0 ${histogram.bins.length * 10} 60`} preserveAspectRatio="none"><title>Luminance Histogram</title>{histogram.bins.map((count, index) => { const height = count / histogramMax * 58; return <rect key={index} x={index * 10 + 1} y={60 - height} width="8" height={height} />; })}</svg>}<div className="histogram-axis"><span>Darker</span><span>Brighter</span></div><p aria-live="polite">{histogramSummary}</p></div>}
         <figcaption data-testid="sandbox-text-outcome">{scene.outcome(resolved.settings, scene.meterReference)} {!visualEffectsAvailable && "Visual refinement is unavailable; the Source Photograph, controls, Meter Reference, Histogram, and this textual outcome remain usable."}</figcaption>
       </figure>

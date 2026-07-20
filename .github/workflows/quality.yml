@@ -1,0 +1,80 @@
+name: Quality
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  application:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test -- --project=chromium --grep-invert "stable visual baseline|visual extremes|both desktop themes|both themes and at 200%|explicit visual fallback"
+      - run: npm run test:performance
+
+  visual-regression:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: npm run test:visual
+
+  browser-smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            install: chromium chrome
+            project: chrome-desktop
+          - os: windows-latest
+            install: chromium msedge
+            project: edge-desktop
+          - os: ubuntu-latest
+            install: firefox
+            project: firefox-desktop
+          - os: macos-latest
+            install: webkit
+            project: webkit-desktop
+          - os: ubuntu-latest
+            install: chromium
+            project: android-chromium-emulation
+          - os: macos-latest
+            install: webkit
+            project: ios-webkit-emulation
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps ${{ matrix.install }}
+        if: runner.os == 'Linux'
+      - run: npx playwright install ${{ matrix.install }}
+        if: runner.os != 'Linux'
+      - run: npm run test:browsers -- --project=${{ matrix.project }}
