@@ -239,6 +239,7 @@ h1 { max-width: 12ch; margin: 0; font-size: clamp(3rem, 6vw, 5.5rem); font-weigh
 .reference-settings { display: flex; justify-content: space-between; gap: 1rem; padding: 1rem; background: var(--surface-strong); font-variant-numeric: tabular-nums; }
 .equivalent-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; padding: 1.5rem; background: var(--surface); border: 1px solid var(--line); }
 .equivalent-controls label { display: grid; gap: .35rem; color: var(--muted); font-size: .78rem; font-weight: 700; }
+.equivalent-controls select { width: 100%; min-width: 0; }
 .equivalent-feedback { margin-top: 1.5rem; margin-bottom: 0; }
 .reference-page { width: min(100% - 2rem, 74rem); }
 .reference-page section { margin-block: 5rem; }
