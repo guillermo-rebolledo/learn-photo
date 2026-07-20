@@ -47,11 +47,13 @@ Because the site is static and stateless (no database, no server-side environmen
 
 | Method | Steps |
 | --- | --- |
-| Vercel dashboard (recommended) | Open the `learn-photo` project → **Deployments**. Find the last known-good production deployment (identified by its commit). Open its menu and choose **Promote to Production**. This is Vercel's instant rollback and takes effect immediately without a rebuild. |
-| Vercel CLI | `vercel rollback [deployment-url]` from a machine with the project linked and an authenticated Vercel CLI session, or `vercel promote <deployment-url> --scope <team>` to promote a specific prior deployment to production. |
-| Git revert | If the bad release also needs to leave the commit history, `git revert` the offending commit(s) on `main` and push; the Git integration deploys the reverted state as a new production deployment. Prefer the dashboard/CLI rollback above when the only goal is to restore service quickly. |
+| Vercel dashboard (recommended) | Open the `learn-photo` project → **Deployments**. Find the last known-good production deployment (identified by its commit). Open its menu and choose **Instant Rollback**. This reassigns the production domain to that deployment immediately, without a rebuild. |
+| Vercel CLI | `vercel rollback [deployment-url]` from a machine with the project linked and an authenticated Vercel CLI session. |
+| Git revert | If the bad release also needs to leave the commit history, `git revert` the offending commit(s) on `main` and push; the Git integration builds the reverted state as a new deployment. Prefer the dashboard/CLI rollback above when the only goal is to restore service quickly. |
 
-After any rollback, re-run the production smoke command above against `https://learn-photo.vercel.app` to confirm the restored deployment is healthy.
+Instant Rollback disables automatic production-domain assignment for subsequent pushes, so that a bad redeploy can't silently override the rolled-back state. That means a later `git revert` push (or any ordinary push to `main`) builds successfully but does **not** automatically become the live production domain until you explicitly run `vercel promote <deployment-url>` (or its dashboard equivalent) — or first undo the rollback with `vercel promote` on the deployment that was live before it. Confirm which state you're in before assuming a new push is actually serving traffic.
+
+After any rollback or promote, re-run the production smoke command above against `https://learn-photo.vercel.app` to confirm the live deployment is healthy.
 
 ## Verification record
 
