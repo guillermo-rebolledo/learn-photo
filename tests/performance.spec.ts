@@ -54,7 +54,12 @@ test("Sandbox route supports the Core Web Vitals and responsive layout budgets",
   expect(result.hasHorizontalOverflow).toBe(false);
 });
 
-test("Exposure Control updates fit the reference animation frame", async ({ page }) => {
+test("Exposure Control commits stay below one frame under a mobile CPU throttle", async ({ page, browserName }) => {
+  await page.setViewportSize({ width: 412, height: 915 });
+  if (browserName === "chromium") {
+    const session = await page.context().newCDPSession(page);
+    await session.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+  }
   await page.goto("/sandbox");
   await expect(page.getByTestId("sandbox-rendered-result")).toHaveAttribute("data-render-quality", "refined");
 

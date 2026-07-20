@@ -56,3 +56,7 @@ export function sandboxExposureOffset(settings: ExposureSettings, scene: Sandbox
 export function sceneCredit(scene: SandboxScene) {
   return imageManifest[scene.manifestKey];
 }
+
+export function scenePreviewImage(scene: SandboxScene) {
+  return sceneCredit(scene).derivatives.find(({ maxDimension }) => maxDimension === 480)?.file ?? scene.image;
+}

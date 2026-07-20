@@ -49,13 +49,13 @@ jobs:
             project: firefox-desktop
           - os: macos-latest
             browser: webkit
-            project: safari-desktop
+            project: webkit-desktop
           - os: ubuntu-latest
             browser: chromium
-            project: android-chrome
+            project: android-chromium-emulation
           - os: macos-latest
             browser: webkit
-            project: ios-safari
+            project: ios-webkit-emulation
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4

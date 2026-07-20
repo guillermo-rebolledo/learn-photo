@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { resolveExposureMode, type ExposureMode } from "@/lib/exposure-mode-model";
 import { buildLuminanceHistogram, summarizeHistogram, type LuminanceHistogram } from "@/lib/metering-model";
 import { formatShutter, nearestScaleSettings, type ExposureSettings } from "@/lib/exposure-scales";
-import { reconcileSceneSettings, sandboxExposureOffset, sandboxScenes, sceneCredit, sceneScale, type SandboxScale, type SandboxSceneId } from "@/lib/sandbox-model";
+import { reconcileSceneSettings, sandboxExposureOffset, sandboxScenes, sceneCredit, scenePreviewImage, sceneScale, type SandboxScale, type SandboxSceneId } from "@/lib/sandbox-model";
 
 const modeNames: Record<ExposureMode, string> = { Auto: "Auto", P: "Program (P)", A: "Aperture Priority (A / Av)", S: "Shutter Priority (S / Tv)", M: "Manual (M)" };
 const refinementDelay = 180;
@@ -43,7 +43,7 @@ export function Sandbox() {
   const credit = sceneCredit(scene);
   const renderKey = `${scene.id}:${resolved.settings.aperture}:${resolved.settings.shutter}:${resolved.settings.iso}`;
   const renderIsSettled = settledRenderKey === renderKey;
-  const previewImage = scene.image.replace("-960.jpg", "-480.jpg");
+  const previewImage = scenePreviewImage(scene);
 
   useEffect(() => {
     setVisualEffectsAvailable(typeof CSS !== "undefined" && CSS.supports("filter", "brightness(1)"));

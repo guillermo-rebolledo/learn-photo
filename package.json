@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "start:static": "node scripts/serve-static.mjs",
     "typecheck": "tsc --noEmit",
     "test": "playwright test",
     "test:smoke": "playwright test tests/shell.spec.ts",

@@ -84,6 +84,20 @@ test("guided Meter Reference and Histogram stay synchronized with the Rendered R
   await expect(result).toHaveAttribute("data-meter-offset", "0");
 });
 
+test("guided Histogram refinement yields while Exposure Control input is active", async ({ page }) => {
+  await page.goto("/lessons/meter-and-histogram");
+
+  const result = page.getByTestId("metering-rendered-result").first();
+  await expect(result).toHaveAttribute("data-render-quality", "refined");
+
+  await page.getByLabel("Guided shutter speed").selectOption("125");
+
+  await expect(result).toHaveAttribute("data-meter-offset", "1");
+  await expect(result).toHaveAttribute("data-render-quality", "preview");
+  await expect(result.getByTestId("histogram-summary")).toContainText(/tones|Clipping/i);
+  await expect(result).toHaveAttribute("data-render-quality", "refined");
+});
+
 test("Bright Snow and Dark Stage Challenges reward deliberate departures from meter zero", async ({ page }) => {
   await page.goto("/lessons/meter-and-histogram");
   await page.getByRole("button", { name: "Take Bright Snow photo" }).click();
