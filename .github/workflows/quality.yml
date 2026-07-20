@@ -1,5 +1,8 @@
 name: Quality
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]
@@ -10,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -25,6 +30,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -39,33 +46,35 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            browser: chromium
+            install: chromium chrome
             project: chrome-desktop
           - os: windows-latest
-            browser: chromium
+            install: chromium msedge
             project: edge-desktop
           - os: ubuntu-latest
-            browser: firefox
+            install: firefox
             project: firefox-desktop
           - os: macos-latest
-            browser: webkit
+            install: webkit
             project: webkit-desktop
           - os: ubuntu-latest
-            browser: chromium
+            install: chromium
             project: android-chromium-emulation
           - os: macos-latest
-            browser: webkit
+            install: webkit
             project: ios-webkit-emulation
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - run: npx playwright install --with-deps ${{ matrix.install }}
         if: runner.os == 'Linux'
-      - run: npx playwright install ${{ matrix.browser }}
+      - run: npx playwright install ${{ matrix.install }}
         if: runner.os != 'Linux'
       - run: npm run test:browsers -- --project=${{ matrix.project }}

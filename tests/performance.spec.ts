@@ -35,7 +35,7 @@ test("Sandbox route supports the Core Web Vitals and responsive layout budgets",
   await expect(page.getByTestId("sandbox-rendered-result")).toHaveAttribute("data-render-quality", "refined");
   await page.getByLabel("Shutter speed").selectOption("30");
   await expect(page.getByTestId("sandbox-rendered-result")).toHaveAttribute("data-shutter", "30");
-  await page.waitForTimeout(250);
+  await expect(page.getByTestId("sandbox-rendered-result")).toHaveAttribute("data-render-quality", "refined");
 
   const result = await page.evaluate(() => {
     const vitals = (window as VitalWindow).__learnPhotoVitals!;

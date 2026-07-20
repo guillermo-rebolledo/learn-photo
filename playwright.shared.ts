@@ -6,4 +6,5 @@ export const staticWebServer = {
   command: "npm run build && npm run start:static",
   url: staticBaseURL,
   reuseExistingServer: true,
+  timeout: 120_000,
 } satisfies PlaywrightTestConfig["webServer"];
