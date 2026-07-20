@@ -21,4 +21,3 @@ Representative committed baselines:
 - [Performance high ISO](../../tests/visual-regression.spec.ts-snapshots/scene-performance-high-iso-chromium-darwin.png)
 - [Bright snow](../../tests/visual-regression.spec.ts-snapshots/scene-snow-bright-chromium-darwin.png)
 - [Dark stage](../../tests/visual-regression.spec.ts-snapshots/scene-stage-dark-chromium-darwin.png)
-
