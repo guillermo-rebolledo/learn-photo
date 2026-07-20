@@ -45,7 +45,48 @@ test("core surfaces remain usable at 200% text size", async ({ page }) => {
         element.style.fontSize = "200%";
       });
 
-      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width);
+      await expect
+        .poll(
+          () =>
+            page.evaluate(() => {
+              const viewportWidth = document.documentElement.clientWidth;
+              const scrollWidth = document.documentElement.scrollWidth;
+              const overflowingElements =
+                scrollWidth > viewportWidth
+                  ? [...document.body.querySelectorAll<HTMLElement>("*")]
+                      .map((element) => {
+                        const bounds = element.getBoundingClientRect();
+                        return {
+                          element: [
+                            element.tagName.toLowerCase(),
+                            element.id ? `#${element.id}` : "",
+                            element.getAttribute("data-testid")
+                              ? `[data-testid=${element.getAttribute("data-testid")}]`
+                              : "",
+                            element.classList.length > 0
+                              ? `.${[...element.classList].join(".")}`
+                              : "",
+                          ].join(""),
+                          left: Math.round(bounds.left),
+                          right: Math.round(bounds.right),
+                          width: Math.round(bounds.width),
+                        };
+                      })
+                      .filter(({ right }) => right > viewportWidth)
+                      .sort((a, b) => b.right - a.right)
+                      .slice(0, 8)
+                  : [];
+
+              return {
+                scrollWidth,
+                overflowingElements,
+              };
+            }),
+          {
+            message: `${route} should fit within the ${viewport.width}px viewport at 200% text size`,
+          },
+        )
+        .toEqual({ scrollWidth: viewport.width, overflowingElements: [] });
       await expect(page.locator("main")).toBeVisible();
       await expect(page.locator("main select, main input, main button, main a").first()).toBeVisible();
     }
