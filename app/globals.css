@@ -199,8 +199,8 @@ h1 { max-width: 12ch; margin: 0; font-size: clamp(3rem, 6vw, 5.5rem); font-weigh
 .status { display: inline-block; font-size: .78rem; }
 .status-achieved::before { content: "✓ "; }.status-close::before { content: "◐ "; }.status-missed::before { content: "× "; }
 .completion { padding: 1rem; border-left: 3px solid var(--moss); background: var(--background); }
-.capstone-challenges { display: grid; gap: 5rem; }
-.capstone-challenge { border-top: 1px solid var(--line); }
+.capstone-challenges { display: grid; grid-template-columns: minmax(0, 1fr); gap: 5rem; }
+.capstone-challenge { min-width: 0; border-top: 1px solid var(--line); }
 .capstone-challenge > header { max-width: 48rem; padding: 2rem 0; }
 .capstone-challenge > header h3 { margin: 0 0 1rem; font-size: clamp(1.8rem, 4vw, 3rem); }
 .capstone-hint { margin: 0; color: var(--muted); font-size: .82rem; }
