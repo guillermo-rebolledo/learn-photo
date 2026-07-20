@@ -181,10 +181,9 @@ h1 { max-width: 12ch; margin: 0; font-size: clamp(3rem, 6vw, 5.5rem); font-weigh
 .lesson-preview-frame { position: relative; aspect-ratio: 1.3; overflow: hidden; background: #171b17; }
 .lesson-preview-frame img { object-fit: cover; object-position: center 58%; }
 .lesson-preview figcaption { min-height: 3.6rem; padding: .85rem 1rem; color: var(--muted); font-size: .84rem; background: var(--background); border-top: 1px solid var(--line); }
-.camera-controls { min-width: 0; display: grid; align-content: center; gap: 1rem; padding: clamp(1.2rem, 3vw, 2rem); }
-.camera-controls > * { min-width: 0; }
+.camera-controls { display: grid; align-content: center; gap: 1rem; padding: clamp(1.2rem, 3vw, 2rem); }
 .camera-controls label { display: grid; gap: .3rem; color: var(--muted); font-size: .78rem; font-weight: 700; }
-.camera-controls select { width: 100%; min-width: 0; font-variant-numeric: tabular-nums; }
+.camera-controls select { width: 100%; font-variant-numeric: tabular-nums; }
 .mode-selector { display: grid; gap: .45rem; margin: 0; padding: .8rem; border: 1px solid var(--line); }
 .mode-selector legend { padding-inline: .25rem; color: var(--muted); font-size: .78rem; font-weight: 700; }
 .mode-selector label, .auto-iso-control { min-height: 2.75rem; display: flex !important; grid-template-columns: auto 1fr; align-items: center; gap: .6rem !important; color: var(--text) !important; }
@@ -199,10 +198,10 @@ h1 { max-width: 12ch; margin: 0; font-size: clamp(3rem, 6vw, 5.5rem); font-weigh
 .status { display: inline-block; font-size: .78rem; }
 .status-achieved::before { content: "✓ "; }.status-close::before { content: "◐ "; }.status-missed::before { content: "× "; }
 .completion { padding: 1rem; border-left: 3px solid var(--moss); background: var(--background); }
-.capstone-challenges { display: grid; grid-template-columns: minmax(0, 1fr); gap: 5rem; }
-.capstone-challenge { min-width: 0; border-top: 1px solid var(--line); }
+.capstone-challenges { display: grid; gap: 5rem; }
+.capstone-challenge { border-top: 1px solid var(--line); }
 .capstone-challenge > header { max-width: 48rem; padding: 2rem 0; }
-.capstone-challenge > header h3 { margin: 0 0 1rem; font-size: clamp(1.8rem, 4vw, 3rem); }
+.capstone-challenge > header h3 { margin: 0 0 1rem; overflow-wrap: anywhere; font-size: clamp(1.8rem, 4vw, 3rem); }
 .capstone-hint { margin: 0; color: var(--muted); font-size: .82rem; }
 .capstone-feedback { margin: 1rem 0 0; }
 .capstone-feedback small { color: var(--muted); font-weight: 500; }
