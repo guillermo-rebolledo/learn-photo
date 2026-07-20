@@ -297,6 +297,7 @@ h1 { max-width: 12ch; margin: 0; font-size: clamp(3rem, 6vw, 5.5rem); font-weigh
 @media (max-width: 600px) {
   .hero { margin-bottom: 4.5rem; }
   .hero h1 { font-size: clamp(2.8rem, 14vw, 4rem); }
+  .interactive-lesson-page > h1 { font-size: clamp(2rem, 12vw, 3.5rem); overflow-wrap: normal; word-break: normal; }
   .lesson-link { grid-template-columns: 2rem minmax(0, 1fr) auto; gap: .8rem; }
   .lesson-time { display: none; }
   .lesson-arrow { grid-column: 3; grid-row: 1; }

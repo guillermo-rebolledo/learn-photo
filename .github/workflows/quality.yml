@@ -1,0 +1,71 @@
+name: Quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  application:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test -- --project=chromium --grep-invert "stable visual baseline|visual extremes|both desktop themes|both themes and at 200%|explicit visual fallback"
+      - run: npm run test:performance
+
+  visual-regression:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: npm run test:visual
+
+  browser-smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            browser: chromium
+            project: chrome-desktop
+          - os: windows-latest
+            browser: chromium
+            project: edge-desktop
+          - os: ubuntu-latest
+            browser: firefox
+            project: firefox-desktop
+          - os: macos-latest
+            browser: webkit
+            project: safari-desktop
+          - os: ubuntu-latest
+            browser: chromium
+            project: android-chrome
+          - os: macos-latest
+            browser: webkit
+            project: ios-safari
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+        if: runner.os == 'Linux'
+      - run: npx playwright install ${{ matrix.browser }}
+        if: runner.os != 'Linux'
+      - run: npm run test:browsers -- --project=${{ matrix.project }}
