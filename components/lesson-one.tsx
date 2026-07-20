@@ -3,7 +3,8 @@
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { evaluateAttempt, renderExposure, type ExposureSettings } from "@/lib/exposure-model";
-import { lessonOne, lessonOneChallenge } from "@/lib/curriculum";
+import { lessonOne, lessonOneChallenge, lessonOneCriteria } from "@/lib/curriculum";
+import { trackEvent } from "@/lib/analytics";
 
 type Attempt = ExposureSettings & { capturedAt: number };
 type Scale = "beginner" | "camera";
@@ -91,6 +92,16 @@ export function LessonOne({ explanation }: { explanation: React.ReactNode }) {
     const attempt = { ...progress.settings, capturedAt: Date.now() };
     const evaluation = evaluateAttempt(attempt);
     const completed = Object.values(evaluation).every(({ status }) => status === "Achieved");
+    trackEvent("challenge_attempted", {
+      lessonSlug: lessonOne.slug,
+      challengeId: lessonOneChallenge.id,
+      sceneId: lessonOneChallenge.sceneId,
+      criteria: [
+        { criterionId: lessonOneCriteria.usableExposure.id, status: evaluation.exposure.status },
+        { criterionId: lessonOneCriteria.highlightDetail.id, status: evaluation.highlights.status },
+      ],
+      achieved: completed,
+    });
     setComparing(false);
     setProgress((current) => ({
       ...current,

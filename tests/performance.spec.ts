@@ -97,6 +97,54 @@ test("Exposure Control commits stay below one frame under a mobile CPU throttle"
   expect(Math.max(...durations)).toBeLessThanOrEqual(16.7);
 });
 
+test("Curated Scene selection stays within the frame budget while the analytics endpoint stalls", async ({ page, browserName }) => {
+  // Never fulfilled: the worst case for a blocked or unreachable collector.
+  await page.route("**/analytics/events", () => {});
+
+  await page.setViewportSize({ width: 412, height: 915 });
+  if (browserName === "chromium") {
+    const session = await page.context().newCDPSession(page);
+    await session.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+  }
+  await page.goto("/sandbox");
+  await expect(page.getByTestId("sandbox-rendered-result")).toHaveAttribute("data-render-quality", "refined");
+
+  const durations = await page.evaluate(async () => {
+    const result = document.querySelector<HTMLElement>('[data-testid="sandbox-rendered-result"]')!;
+    const samples: number[] = [];
+
+    async function chooseScene(name: string, sceneId: string, record: boolean) {
+      const radio = [...document.querySelectorAll<HTMLInputElement>('input[name="sandbox-scene"]')]
+        .find((input) => input.closest("label")?.textContent?.trim() === name)!;
+      const startedAt = performance.now();
+      const update = new Promise<void>((resolve) => {
+        const observer = new MutationObserver(() => {
+          if (result.dataset.scene === sceneId) {
+            observer.disconnect();
+            if (record) samples.push(performance.now() - startedAt);
+            resolve();
+          }
+        });
+        observer.observe(result, { attributes: true, attributeFilter: ["data-scene"] });
+      });
+      radio.click();
+      await update;
+    }
+
+    // Each selection emits a sandbox_scene_viewed event against the stalled endpoint.
+    await chooseScene("Moving Cyclist", "moving-cyclist", false);
+    for (let index = 0; index < 4; index += 1) {
+      await chooseScene("Neutral Still Life", "neutral-still-life", true);
+      await chooseScene("Moving Cyclist", "moving-cyclist", true);
+    }
+
+    return samples;
+  });
+
+  expect(durations).toHaveLength(8);
+  expect(Math.max(...durations)).toBeLessThanOrEqual(16.7);
+});
+
 test("phone and 200% text layouts retain controls without horizontal overflow", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/sandbox");

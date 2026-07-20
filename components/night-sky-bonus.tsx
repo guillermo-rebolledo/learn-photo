@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { bulbDurations, evaluateNightSky, nightSkyChallenges, nightSkyExposureStops, type NightSkyIntention, type NightSkySettings } from "@/lib/night-sky-model";
+import { trackEvent } from "@/lib/analytics";
 
 const storageKey = "learn-photo-night-sky";
 const defaults: Record<NightSkyIntention, NightSkySettings> = { sharp: nightSkyChallenges.sharp.defaults, trails: nightSkyChallenges.trails.defaults };
@@ -51,6 +52,13 @@ export function NightSkyBonus() {
     setSettings((current) => ({ ...current, [path]: { ...current[path], [field]: value } }));
   }
   function attempt(path: NightSkyIntention) {
+    trackEvent("challenge_attempted", {
+      lessonSlug: "night-sky",
+      challengeId: `night-sky-${path}`,
+      sceneId: "night-sky",
+      criteria: results[path].criteria.map((criterion) => ({ criterionId: criterion.id, status: criterion.result.status })),
+      achieved: results[path].complete,
+    });
     const nextAttempted = [...new Set([...attempted, path])];
     const nextCaptures = { ...captures, [path]: results[path].complete };
     setAttempted(nextAttempted);

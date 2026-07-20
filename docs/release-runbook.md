@@ -23,6 +23,8 @@ The Vercel project (`learn-photo`) is connected to this repository's Git remote.
 
 Static export (`output: "export"` in `next.config.ts`) means the production deployment is a plain static file set. There are no environment variables, server functions, or Vercel-only runtime features for core Learning Loop or Progress behavior — Progress lives entirely in the learner's browser via `localStorage`.
 
+Anonymous curriculum analytics (ADR 0012) is non-blocking and non-core, so it is absent from this dependency chain by design. By default its beacon has no collector deployed behind it. To point it at a real collector, set the build-time `NEXT_PUBLIC_ANALYTICS_ENDPOINT` environment variable in the Vercel project before a release; omitting it is safe and does not block launch.
+
 ## Production smoke tests
 
 After a production deployment finishes, run the smoke suite against the live URL:

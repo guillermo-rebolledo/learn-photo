@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { trackEvent } from "@/lib/analytics";
 
 export function LessonPositionTracker({ slug }: { slug: string }) {
   useEffect(() => {
@@ -11,6 +12,7 @@ export function LessonPositionTracker({ slug }: { slug: string }) {
     } catch {
       localStorage.setItem("learn-photo-progress", JSON.stringify({ lesson: slug }));
     }
+    trackEvent("lesson_viewed", { lessonSlug: slug });
   }, [slug]);
 
   return null;

@@ -19,6 +19,7 @@ import {
   type MeteringSceneId,
 } from "@/lib/metering-model";
 import { useSettledRender } from "./use-settled-render";
+import { trackEvent } from "@/lib/analytics";
 
 export function LessonSix({ explanation }: { explanation: React.ReactNode }) {
   const [guidedSceneId, setGuidedSceneId] = useState<MeteringSceneId>("bright-snow");
@@ -105,6 +106,13 @@ function MeteringChallenge({ sceneId, onRenderingUnavailable }: { sceneId: Meter
     setCapturing(true);
     setFeedback(null);
     const evaluation = evaluateMeteringAttempt(sceneId, settings, histogram);
+    trackEvent("challenge_attempted", {
+      lessonSlug: lessonSix.slug,
+      challengeId: challenge.id,
+      sceneId,
+      criteria: Object.values(evaluation.criteria).map((criterion, index) => ({ criterionId: challenge.successCriteria[index].id, status: criterion.status })),
+      achieved: evaluation.complete,
+    });
     captureTimer.current = window.setTimeout(() => {
       setFeedback(evaluation);
       setCapturing(false);
