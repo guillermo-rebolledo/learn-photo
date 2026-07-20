@@ -1,7 +1,7 @@
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
-import { extname, join, resolve } from "node:path";
+import { extname, isAbsolute, join, relative, resolve } from "node:path";
 
 const root = resolve("out");
 const port = Number(process.env.LEARN_PHOTO_PORT ?? 4173);
@@ -25,7 +25,8 @@ async function findStaticFile(pathname) {
 
   for (const candidate of candidates) {
     const file = resolve(root, candidate);
-    if (!file.startsWith(`${root}/`)) continue;
+    const pathFromRoot = relative(root, file);
+    if (pathFromRoot.startsWith("..") || isAbsolute(pathFromRoot)) continue;
     try {
       if ((await stat(file)).isFile()) return file;
     } catch {}

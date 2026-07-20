@@ -18,8 +18,7 @@ import {
   type LuminanceHistogram,
   type MeteringSceneId,
 } from "@/lib/metering-model";
-
-const refinementDelay = 180;
+import { useSettledRender } from "./use-settled-render";
 
 export function LessonSix({ explanation }: { explanation: React.ReactNode }) {
   const [guidedSceneId, setGuidedSceneId] = useState<MeteringSceneId>("bright-snow");
@@ -131,18 +130,12 @@ function MeteringPreview({ sceneId, settings, eager = false, capturing = false, 
   const meterOffset = meterOffsetStops(settings, scene.meterReference);
   const renderedFromSourceStops = meterOffset - scene.calibration.sourceRenderingOffset;
   const renderKey = `${sceneId}:${renderedFromSourceStops}`;
-  const [settledRender, setSettledRender] = useState(() => ({ key: renderKey, stops: renderedFromSourceStops }));
-  const renderIsSettled = settledRender.key === renderKey;
+  const { isSettled: renderIsSettled, settledValue: settledRenderStops } = useSettledRender(renderKey, renderedFromSourceStops);
   const [histogram, setHistogram] = useState(() => calibratedFallbackHistogram(sceneId, meterOffset));
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sourcePixels = useRef<{ sceneId: MeteringSceneId; pixels: Uint8ClampedArray; width: number; height: number } | null>(null);
   const displayedHistogram = renderIsSettled ? histogram : calibratedFallbackHistogram(sceneId, meterOffset);
   const summary = summarizeHistogram(displayedHistogram);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setSettledRender({ key: renderKey, stops: renderedFromSourceStops }), refinementDelay);
-    return () => window.clearTimeout(timer);
-  }, [renderKey, renderedFromSourceStops]);
 
   useEffect(() => {
     if (!renderIsSettled) onHistogramChange?.(displayedHistogram);
@@ -152,13 +145,13 @@ function MeteringPreview({ sceneId, settings, eager = false, capturing = false, 
     if (!renderIsSettled) return;
     const source = sourcePixels.current;
     if (source?.sceneId === sceneId) {
-      paintRenderedResult(source.pixels, source.width, source.height, settledRender.stops);
+      paintRenderedResult(source.pixels, source.width, source.height, settledRenderStops);
       return;
     }
     sourcePixels.current = null;
     if (!clearRenderedCanvas()) onRenderingUnavailable();
     publishHistogram(calibratedFallbackHistogram(sceneId, meterOffset));
-  }, [sceneId, renderIsSettled, settledRender.key, settledRender.stops]);
+  }, [sceneId, renderIsSettled, settledRenderStops]);
 
   function publishHistogram(nextHistogram: LuminanceHistogram) {
     setHistogram(nextHistogram);
@@ -219,7 +212,7 @@ function MeteringPreview({ sceneId, settings, eager = false, capturing = false, 
       context.drawImage(image, 0, 0, width, height);
       const pixels = new Uint8ClampedArray(context.getImageData(0, 0, width, height).data);
       sourcePixels.current = { sceneId, pixels, width, height };
-      if (renderIsSettled) paintRenderedResult(pixels, width, height, settledRender.stops);
+      if (renderIsSettled) paintRenderedResult(pixels, width, height, settledRenderStops);
     } catch {
       useCalibratedFallback();
     }

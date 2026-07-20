@@ -1,18 +1,15 @@
 import { defineConfig, devices } from "@playwright/test";
+import { staticBaseURL, staticWebServer } from "./playwright.shared";
 
 export default defineConfig({
   testDir: "./tests",
   testMatch: "browser-smoke.spec.ts",
   fullyParallel: true,
   use: {
-    baseURL: "http://127.0.0.1:4173",
+    baseURL: staticBaseURL,
     trace: "on-first-retry",
   },
-  webServer: {
-    command: "npm run build && npm run start:static",
-    url: "http://127.0.0.1:4173",
-    reuseExistingServer: true,
-  },
+  webServer: staticWebServer,
   projects: [
     { name: "chrome-desktop", use: { ...devices["Desktop Chrome"], channel: "chrome" } },
     { name: "edge-desktop", use: { ...devices["Desktop Edge"], channel: "msedge" } },

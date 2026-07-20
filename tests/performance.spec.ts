@@ -68,13 +68,13 @@ test("Exposure Control commits stay below one frame under a mobile CPU throttle"
     const result = document.querySelector<HTMLElement>('[data-testid="sandbox-rendered-result"]')!;
     const samples: number[] = [];
 
-    for (const value of ["30", "60", "30", "60", "30", "60", "30", "60"]) {
+    async function changeShutter(value: string, record: boolean) {
       const startedAt = performance.now();
       const update = new Promise<void>((resolve) => {
         const observer = new MutationObserver(() => {
           if (result.dataset.shutter === value) {
             observer.disconnect();
-            samples.push(performance.now() - startedAt);
+            if (record) samples.push(performance.now() - startedAt);
             resolve();
           }
         });
@@ -83,6 +83,12 @@ test("Exposure Control commits stay below one frame under a mobile CPU throttle"
       control.value = value;
       control.dispatchEvent(new Event("change", { bubbles: true }));
       await update;
+    }
+
+    await changeShutter("30", false);
+    await changeShutter("60", false);
+    for (const value of ["30", "60", "30", "60", "30", "60", "30", "60"]) {
+      await changeShutter(value, true);
     }
 
     return samples;

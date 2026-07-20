@@ -1,16 +1,14 @@
 import { defineConfig, devices } from "@playwright/test";
+import { staticBaseURL, staticWebServer } from "./playwright.shared";
 
 export default defineConfig({
   testDir: "./tests",
   fullyParallel: true,
+  workers: 1,
   use: {
-    baseURL: "http://127.0.0.1:4173",
+    baseURL: staticBaseURL,
     trace: "on-first-retry",
   },
-  webServer: {
-    command: "npm run build && npm run start:static",
-    url: "http://127.0.0.1:4173",
-    reuseExistingServer: true,
-  },
+  webServer: staticWebServer,
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 });

@@ -6,9 +6,9 @@ import { resolveExposureMode, type ExposureMode } from "@/lib/exposure-mode-mode
 import { buildLuminanceHistogram, summarizeHistogram, type LuminanceHistogram } from "@/lib/metering-model";
 import { formatShutter, nearestScaleSettings, type ExposureSettings } from "@/lib/exposure-scales";
 import { reconcileSceneSettings, sandboxExposureOffset, sandboxScenes, sceneCredit, scenePreviewImage, sceneScale, type SandboxScale, type SandboxSceneId } from "@/lib/sandbox-model";
+import { useSettledRender } from "./use-settled-render";
 
 const modeNames: Record<ExposureMode, string> = { Auto: "Auto", P: "Program (P)", A: "Aperture Priority (A / Av)", S: "Shutter Priority (S / Tv)", M: "Manual (M)" };
-const refinementDelay = 180;
 
 function portraitBlurFor(sceneId: SandboxSceneId, aperture: number) {
   return sceneId === "window-light-portrait" ? (aperture <= 2.8 ? 14 : aperture >= 8 ? 0 : 7) : 0;
@@ -34,7 +34,6 @@ export function Sandbox() {
   const [histogramUnavailable, setHistogramUnavailable] = useState(false);
   const [adjustment, setAdjustment] = useState("");
   const [visualEffectsAvailable, setVisualEffectsAvailable] = useState(true);
-  const [settledRenderKey, setSettledRenderKey] = useState("");
   const scene = sandboxScenes.find((candidate) => candidate.id === sceneId) ?? sandboxScenes[0];
   const limits = sceneScale(scene, scaleName);
   const refinementGeneration = useRef(0);
@@ -42,7 +41,7 @@ export function Sandbox() {
   const offset = sandboxExposureOffset(resolved.settings, scene);
   const credit = sceneCredit(scene);
   const renderKey = `${scene.id}:${resolved.settings.aperture}:${resolved.settings.shutter}:${resolved.settings.iso}`;
-  const renderIsSettled = settledRenderKey === renderKey;
+  const { isSettled: renderIsSettled } = useSettledRender(renderKey, renderKey);
   const previewImage = scenePreviewImage(scene);
 
   useEffect(() => {
@@ -53,8 +52,6 @@ export function Sandbox() {
     refinementGeneration.current += 1;
     setHistogram(null);
     setHistogramUnavailable(false);
-    const timer = window.setTimeout(() => setSettledRenderKey(renderKey), refinementDelay);
-    return () => window.clearTimeout(timer);
   }, [renderKey]);
 
   function chooseScene(nextId: SandboxSceneId) {
