@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { lessons } from "@/lib/curriculum";
@@ -19,6 +20,18 @@ import ExposureModesContent from "@/content/lessons/exposure-modes.mdx";
 import { LessonEight } from "@/components/lesson-eight";
 
 export function generateStaticParams() { return lessons.map(({ slug }) => ({ slug })); }
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const lesson = lessons.find((item) => item.slug === slug);
+  if (!lesson) return {};
+  return {
+    title: lesson.title,
+    description: lesson.summary,
+    alternates: { canonical: `/lessons/${lesson.slug}` },
+    openGraph: { url: `/lessons/${lesson.slug}` },
+  };
+}
 
 export default async function LessonPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
