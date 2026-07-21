@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { lessonTwo, lessonTwoChallenge } from "@/lib/curriculum";
 import { beginnerScale, cameraScale, equivalentExposureStops, formatShutter, nearestScaleSettings, type ExposureSettings } from "@/lib/exposure-scales";
+import { trackEvent } from "@/lib/analytics";
 
 type Scale = "beginner" | "camera";
 type Attempt = ExposureSettings & { capturedAt: number };
@@ -85,6 +86,13 @@ export function LessonTwo({ explanation }: { explanation: React.ReactNode }) {
       && Object.keys(settings).some((key) => settings[key as keyof ExposureSettings] !== lessonTwoChallenge.referenceSettings[key as keyof ExposureSettings]);
     const status = achieved ? "Achieved" : Math.abs(difference) <= 1 ? "Close" : "Missed";
     const attempt = { ...settings, capturedAt: Date.now() };
+    trackEvent("challenge_attempted", {
+      lessonSlug: lessonTwo.slug,
+      challengeId: lessonTwoChallenge.id,
+      sceneId: lessonTwoChallenge.sceneId,
+      criteria: [{ criterionId: lessonTwoChallenge.successCriteria[0].id, status }],
+      achieved,
+    });
     setPreviousAttempt(currentAttempt);
     setCurrentAttempt(attempt);
     setCompleted((value) => value || achieved);

@@ -7,6 +7,7 @@ import { buildLuminanceHistogram, summarizeHistogram, type LuminanceHistogram } 
 import { formatShutter, nearestScaleSettings, type ExposureSettings } from "@/lib/exposure-scales";
 import { reconcileSceneSettings, sandboxExposureOffset, sandboxScenes, sceneCredit, scenePreviewImage, sceneScale, type SandboxScale, type SandboxSceneId } from "@/lib/sandbox-model";
 import { useSettledRender } from "./use-settled-render";
+import { trackEvent } from "@/lib/analytics";
 
 const modeNames: Record<ExposureMode, string> = { Auto: "Auto", P: "Program (P)", A: "Aperture Priority (A / Av)", S: "Shutter Priority (S / Tv)", M: "Manual (M)" };
 
@@ -46,6 +47,8 @@ export function Sandbox() {
 
   useEffect(() => {
     setVisualEffectsAvailable(typeof CSS !== "undefined" && CSS.supports("filter", "brightness(1)"));
+    trackEvent("sandbox_scene_viewed", { sceneId });
+    // Tracks only the initial Curated Scene shown on mount; later selections are tracked in chooseScene.
   }, []);
 
   useEffect(() => {
@@ -56,6 +59,7 @@ export function Sandbox() {
 
   function chooseScene(nextId: SandboxSceneId) {
     const nextScene = sandboxScenes.find((candidate) => candidate.id === nextId) ?? sandboxScenes[0];
+    trackEvent("sandbox_scene_viewed", { sceneId: nextScene.id });
     const next = reconcileSceneSettings(resolved.settings, nextScene, scaleName);
     const changed = (Object.keys(next) as (keyof ExposureSettings)[]).filter((control) => next[control] !== resolved.settings[control]);
     setSceneId(nextId);

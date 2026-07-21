@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { evaluatePortraitAttempt, portraitDepth, portraitExposureStops, type PortraitIntention } from "@/lib/aperture-model";
 import { lessonThree, lessonThreeChallenge, windowLightPortraitScene } from "@/lib/curriculum";
 import type { ExposureSettings } from "@/lib/exposure-model";
+import { trackEvent } from "@/lib/analytics";
 
 const apertures = [2, 2.8, 4, 5.6, 8, 11];
 const shutters = [30, 60, 125, 250, 500];
@@ -67,6 +68,27 @@ export function LessonThree({ explanation }: { explanation: React.ReactNode }) {
     setFeedback(null);
   }
 
+  function takePhoto() {
+    const nextFeedback = evaluatePortraitAttempt(settings, intention);
+    const achieved = Object.values(nextFeedback).every(({ status }) => status === "Achieved");
+    trackEvent("challenge_attempted", {
+      lessonSlug: lessonThree.slug,
+      challengeId: lessonThreeChallenge.id,
+      sceneId: lessonThreeChallenge.sceneId,
+      criteria: [
+        { criterionId: lessonThreeChallenge.successCriteria[0].id, status: nextFeedback.exposure.status },
+        { criterionId: lessonThreeChallenge.successCriteria[1].id, status: nextFeedback.depth.status },
+      ],
+      achieved,
+    });
+    const attempt = { ...settings, intention, capturedAt: Date.now() };
+    setPreviousAttempt(currentAttempt);
+    setCurrentAttempt(attempt);
+    setComparing(false);
+    setFeedback(nextFeedback);
+    setCompleted((value) => value || achieved);
+  }
+
   return <div className={visualEffectsAvailable ? undefined : "no-visual-effects"}>
     <section className="lesson-explanation" aria-label="Explanation">{explanation}</section>
     <section className="experiment" aria-labelledby="aperture-experiment-title">
@@ -89,7 +111,7 @@ export function LessonThree({ explanation }: { explanation: React.ReactNode }) {
           <label>Challenge aperture<select aria-label="Challenge aperture" value={settings.aperture} onChange={(event) => update("aperture", event.target.value)}>{apertures.map((value) => <option key={value} value={value}>f/{value}</option>)}</select></label>
           <label>Challenge shutter speed<select aria-label="Challenge shutter speed" value={settings.shutter} onChange={(event) => update("shutter", event.target.value)}>{shutters.map((value) => <option key={value} value={value}>1/{value}s</option>)}</select></label>
           <label>Challenge ISO<select aria-label="Challenge ISO" value={settings.iso} onChange={(event) => update("iso", event.target.value)}>{isos.map((value) => <option key={value} value={value}>ISO {value}</option>)}</select></label>
-          <button className="button primary-button capture-button" disabled={!hydrated} onClick={() => { const nextFeedback = evaluatePortraitAttempt(settings, intention); const attempt = { ...settings, intention, capturedAt: Date.now() }; setPreviousAttempt(currentAttempt); setCurrentAttempt(attempt); setComparing(false); setFeedback(nextFeedback); setCompleted((value) => value || Object.values(nextFeedback).every(({ status }) => status === "Achieved")); }}>Take photo</button>
+          <button className="button primary-button capture-button" disabled={!hydrated} onClick={takePhoto}>Take photo</button>
         </div>
       </div>
       {completed && !feedback && <p className="completion"><strong>Challenge complete</strong> — your successful Attempt is saved in browser-local Progress.</p>}

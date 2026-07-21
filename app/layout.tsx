@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import "./globals.css";
 import { siteUrl } from "@/lib/site";
 import { SiteHeader } from "@/components/site-header";
@@ -43,7 +44,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <a className="skip-link" href="#main">Skip to content</a>
         <SiteHeader />
         {children}
-        <footer className="site-footer"><p>Learn Photo · Exposure Fundamentals, without the intimidation.</p></footer>
+        <footer className="site-footer"><p>Learn Photo · Exposure Fundamentals, without the intimidation. · <Link href="/privacy">Privacy</Link></p></footer>
       </body>
     </html>
   );

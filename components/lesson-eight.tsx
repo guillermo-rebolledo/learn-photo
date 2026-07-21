@@ -3,16 +3,18 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import ChoosingSettingsContent from "@/content/lessons/choosing-settings.mdx";
-import { capstoneDefinitions, evaluateCapstone, type CapstonePath, type CapstoneResult } from "@/lib/capstone-model";
+import { capstoneChallengeIds, capstoneDefinitions, evaluateCapstone, type CapstonePath, type CapstoneResult } from "@/lib/capstone-model";
 import type { ExposureSettings } from "@/lib/exposure-model";
-import { lessonEight } from "@/lib/curriculum";
+import { dimIndoorPerformanceScene, lessonEight, movingCyclistScene, windowLightPortraitScene } from "@/lib/curriculum";
 import { cyclistExposureStops, cyclistMotion } from "@/lib/shutter-model";
 import { portraitDepth, portraitExposureStops } from "@/lib/aperture-model";
 import { noiseOutcome, performanceExposureStops, performanceMotion } from "@/lib/iso-model";
+import { trackEvent } from "@/lib/analytics";
 
 const storageKey = "learn-photo-progress";
 const paths: CapstonePath[] = ["motion", "depth", "lowLight"];
 const images = { motion: "moving-cyclist-960.jpg", depth: "window-light-portrait-960.jpg", lowLight: "dim-indoor-performance-960.jpg" } as const;
+const capstoneSceneIds: Record<CapstonePath, string> = { motion: movingCyclistScene.id, depth: windowLightPortraitScene.id, lowLight: dimIndoorPerformanceScene.id };
 const modeDefaults = { motion: "Shutter Priority", depth: "Aperture Priority", lowLight: "Manual" } as const;
 
 type SavedCapstone = { settings?: Partial<Record<CapstonePath, ExposureSettings>>; results?: Partial<Record<CapstonePath, CapstoneResult>>; completed?: CapstonePath[] };
@@ -45,7 +47,7 @@ export function LessonEight() {
       const saved = JSON.parse(localStorage.getItem(storageKey) ?? "{}");
       const capstoneComplete = nextCompleted.length === paths.length;
       const completedLessons = Array.isArray(saved.completedLessons) ? saved.completedLessons.filter((item: unknown) => typeof item === "string") : [];
-      localStorage.setItem(storageKey, JSON.stringify({ ...saved, lesson: lessonEight.slug, capstone: { settings: nextSettings, results: nextResults, completed: nextCompleted }, capstoneComplete, completedChallenges: [...new Set([...(Array.isArray(saved.completedChallenges) ? saved.completedChallenges : []), ...nextCompleted.map((path) => `capstone-${path}`)])], completedLessons: capstoneComplete ? [...new Set([...completedLessons, lessonEight.slug])] : completedLessons }));
+      localStorage.setItem(storageKey, JSON.stringify({ ...saved, lesson: lessonEight.slug, capstone: { settings: nextSettings, results: nextResults, completed: nextCompleted }, capstoneComplete, completedChallenges: [...new Set([...(Array.isArray(saved.completedChallenges) ? saved.completedChallenges : []), ...nextCompleted.map((path) => capstoneChallengeIds[path])])], completedLessons: capstoneComplete ? [...new Set([...completedLessons, lessonEight.slug])] : completedLessons }));
     } catch { /* Progress is optional; the Capstone remains usable. */ }
   }
 
@@ -57,6 +59,13 @@ export function LessonEight() {
 
   function attempt(path: CapstonePath) {
     const evaluated = evaluateCapstone(path, settings[path]);
+    trackEvent("challenge_attempted", {
+      lessonSlug: lessonEight.slug,
+      challengeId: capstoneChallengeIds[path],
+      sceneId: capstoneSceneIds[path],
+      criteria: evaluated.criteria.map((criterion) => ({ criterionId: criterion.id, status: criterion.result.status })),
+      achieved: evaluated.complete,
+    });
     const nextResults = { ...results, [path]: evaluated };
     const nextCompleted = evaluated.complete ? [...new Set([...completed, path])] : completed.filter((item) => item !== path);
     setResults(nextResults);

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { cyclistExposureStops, cyclistMotion, evaluateCyclistAttempt, shutterCapturedLightStops, type CyclistIntention } from "@/lib/shutter-model";
 import { lessonFour, lessonFourChallenges, lessonFourControls, movingCyclistScene } from "@/lib/curriculum";
 import type { ExposureSettings } from "@/lib/exposure-model";
+import { trackEvent } from "@/lib/analytics";
 
 const shutters: readonly number[] = lessonFourControls.shutter;
 const apertures: readonly number[] = lessonFourControls.aperture;
@@ -64,6 +65,16 @@ export function LessonFour({ explanation }: { explanation: React.ReactNode }) {
 
   function capture() {
     const nextFeedback = evaluateCyclistAttempt(settings, intention);
+    trackEvent("challenge_attempted", {
+      lessonSlug: lessonFour.slug,
+      challengeId: lessonFourChallenges[intention].id,
+      sceneId: movingCyclistScene.id,
+      criteria: [
+        { criterionId: lessonFourChallenges[intention].successCriteria[0].id, status: nextFeedback.exposure.status },
+        { criterionId: lessonFourChallenges[intention].successCriteria[1].id, status: nextFeedback.motion.status },
+      ],
+      achieved: Object.values(nextFeedback).every(({ status }) => status === "Achieved"),
+    });
     setPreviousAttempt(currentAttempt);
     setCurrentAttempt({ ...settings, intention, capturedAt: Date.now() });
     setComparing(false);

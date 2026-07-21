@@ -4,6 +4,14 @@ import { evaluateCyclistAttempt } from "./shutter-model";
 import type { CriterionFeedback, ExposureSettings } from "./exposure-model";
 
 export type CapstonePath = "motion" | "depth" | "lowLight";
+
+/** Canonical Challenge identifiers for the three Capstone parts, shared by browser-local Progress and analytics. */
+export const capstoneChallengeIds = {
+  motion: "capstone-motion",
+  depth: "capstone-depth",
+  lowLight: "capstone-low-light",
+} as const satisfies Record<CapstonePath, string>;
+
 export type CapstoneResult = {
   criteria: readonly { id: string; label: string; essential: boolean; result: CriterionFeedback }[];
   complete: boolean;

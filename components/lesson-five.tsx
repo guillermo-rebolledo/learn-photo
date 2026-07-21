@@ -8,6 +8,7 @@ import type { ExposureSettings } from "@/lib/exposure-model";
 import { evaluateFilmConstraint, filmExposureStops, type FilmIntention } from "@/lib/film-model";
 import { portraitDepth } from "@/lib/aperture-model";
 import { cyclistMotion } from "@/lib/shutter-model";
+import { trackEvent } from "@/lib/analytics";
 
 const isos = [100, 200, 400, 800, 1600, 3200, 6400, 12800];
 const shutters = [30, 60, 125, 250, 500];
@@ -29,6 +30,22 @@ export function LessonFive({ explanation }: { explanation: React.ReactNode }) {
 
   function update(name: keyof ExposureSettings, value: string) { setSettings((current) => ({ ...current, [name]: Number(value) })); setFeedback(null); }
 
+  function takePhoto() {
+    const evaluation = evaluatePerformanceAttempt(settings, intention);
+    trackEvent("challenge_attempted", {
+      lessonSlug: lessonFive.slug,
+      challengeId: lessonFiveChallenge.id,
+      sceneId: dimIndoorPerformanceScene.id,
+      criteria: [
+        { criterionId: lessonFiveChallenge.successCriteria[0].id, status: evaluation.exposure.status },
+        { criterionId: lessonFiveChallenge.successCriteria[1].id, status: evaluation.motion.status },
+        { criterionId: lessonFiveChallenge.successCriteria[2].id, status: evaluation.quality.status },
+      ],
+      achieved: Object.values(evaluation).every(({ status }) => status === "Achieved"),
+    });
+    setFeedback(evaluation);
+  }
+
   return <div className={visualEffectsAvailable ? undefined : "no-performance-effects"}>
     <section className="lesson-explanation" aria-label="Explanation">{explanation}</section>
     <section className="experiment" aria-labelledby="iso-experiment-title">
@@ -48,7 +65,7 @@ export function LessonFive({ explanation }: { explanation: React.ReactNode }) {
           <label>Challenge aperture<select aria-label="Challenge aperture" value={settings.aperture} onChange={(event) => update("aperture", event.target.value)}>{apertures.map((value) => <option key={value} value={value}>f/{value}</option>)}</select></label>
           <label>Challenge shutter speed<select aria-label="Challenge shutter speed" value={settings.shutter} onChange={(event) => update("shutter", event.target.value)}>{shutters.map((value) => <option key={value} value={value}>1/{value}s</option>)}</select></label>
           <label>Challenge ISO<select aria-label="Challenge ISO" value={settings.iso} onChange={(event) => update("iso", event.target.value)}>{isos.map((value) => <option key={value} value={value}>ISO {value}</option>)}</select></label>
-          <button className="button primary-button capture-button" onClick={() => setFeedback(evaluatePerformanceAttempt(settings, intention))}>Take photo</button>
+          <button className="button primary-button capture-button" onClick={takePhoto}>Take photo</button>
         </div>
       </div>
       {feedback && <div className="feedback" aria-live="polite"><p className="eyebrow">Criterion Status</p><h3>{complete ? "Challenge complete" : "Keep experimenting"}</h3><div className="criteria iso-criteria">{([ ["Usable exposure", feedback.exposure], ["Intended motion", feedback.motion], ["ISO-compatible image quality", feedback.quality] ] as const).map(([label, criterion]) => <article key={label}><h4>{label}</h4><strong className={`status status-${criterion.status.toLowerCase()}`}>{criterion.status}</strong><p>{criterion.explanation}</p></article>)}</div><p><strong>Tradeoff Feedback:</strong> A slower shutter gathers more light but shows more motion. A wider aperture gathers more light but changes depth. Higher ISO lifts Rendered Brightness without adding Captured Light, with a stronger noise tradeoff.</p></div>}
@@ -111,6 +128,17 @@ function FilmConstraints() {
 
   function submit(intention: FilmIntention) {
     const result = evaluateFilmConstraint(settings[intention], intention);
+    trackEvent("challenge_attempted", {
+      lessonSlug: lessonFive.slug,
+      challengeId: filmConstraintChallenges[intention].id,
+      sceneId: filmConstraintChallenges[intention].sceneId,
+      criteria: [
+        { criterionId: filmConstraintChallenges[intention].successCriteria[0].id, status: result.exposure.status },
+        { criterionId: filmConstraintChallenges[intention].successCriteria[1].id, status: result.intention.status },
+        { criterionId: filmConstraintChallenges[intention].successCriteria[2].id, status: result.filmSpeed.status },
+      ],
+      achieved: Object.values(result).every(({ status }) => status === "Achieved"),
+    });
     setPreviousFeedback((previous) => ({ ...previous, [intention]: feedback[intention] }));
     setPreviousAttempts((previous) => ({ ...previous, [intention]: currentAttempts[intention] }));
     setCurrentAttempts((current) => ({ ...current, [intention]: { ...settings[intention] } }));
