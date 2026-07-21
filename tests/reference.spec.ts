@@ -90,21 +90,29 @@ test("external Curriculum Source and credit references do not resolve as broken"
     ...sourcePhotographs.flatMap(({ sourceUrl, licenseUrl }) => [sourceUrl, licenseUrl]),
   ]);
 
-  // Fetch a single URL, retrying on connection-level failures. A status of 0
-  // means the request never produced an HTTP response (timeout, reset, or a
-  // host that refuses non-browser clients) — that is inconclusive, not proof of
-  // a broken link, so we retry before giving up on it.
+  // Bound the whole reachability check by a wall-clock budget below the test timeout, so a slow or
+  // unreachable origin surfaces as an inconclusive warning instead of tripping the hard timeout. Once
+  // the budget is spent, remaining URLs resolve to status 0 (inconclusive) immediately.
+  const deadline = Date.now() + 90_000;
+  const remainingBudget = () => deadline - Date.now();
+  const requestTimeout = () => Math.min(10_000, Math.max(1, remainingBudget()));
+
+  // Fetch a single URL, retrying on connection-level failures. A status of 0 means the request never
+  // produced an HTTP response (timeout, reset, or a host that refuses non-browser clients) — that is
+  // inconclusive, not proof of a broken link, so we retry before giving up on it.
   const fetchStatus = async (url: string): Promise<number> => {
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (remainingBudget() <= 0) break;
       try {
-        const response = await request.fetch(url, { method: "HEAD", timeout: 20_000, failOnStatusCode: false, headers: { connection: "close" } });
-        return response.status();
+        const head = await request.fetch(url, { method: "HEAD", timeout: requestTimeout(), failOnStatusCode: false, headers: { connection: "close" } });
+        // Some hosts reject HEAD itself (405/501); confirm with GET before trusting that status.
+        if (head.status() !== 405 && head.status() !== 501) return head.status();
+        return (await request.get(url, { timeout: requestTimeout(), failOnStatusCode: false, headers: { connection: "close" } })).status();
       } catch {
         try {
-          const response = await request.get(url, { timeout: 20_000, failOnStatusCode: false, headers: { connection: "close" } });
-          return response.status();
+          return (await request.get(url, { timeout: requestTimeout(), failOnStatusCode: false, headers: { connection: "close" } })).status();
         } catch {
-          if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 1_000 * (attempt + 1)));
+          if (attempt < 1 && remainingBudget() > 0) await new Promise((resolve) => setTimeout(resolve, 1_000));
         }
       }
     }

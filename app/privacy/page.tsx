@@ -21,7 +21,7 @@ export default function PrivacyPage() {
 
     <section aria-labelledby="analytics-heading">
       <h2 id="analytics-heading">Anonymous curriculum analytics</h2>
-      <p>Learn Photo may separately send a small number of anonymous curriculum events. This is distinct from Progress: it never identifies you, never leaves this device attached to a name or account, and never reconstructs your individual Learning Path. Every event is limited to a canonical identifier — a Lesson, Challenge, Success Criterion, or Curated Scene — and never carries names, typed content, personal imagery, an advertising profile, or a cross-site identifier.</p>
+      <p>Learn Photo may separately send a small number of anonymous curriculum events. This is distinct from Progress: it never identifies you, never leaves this device attached to a name or account, and never reconstructs your individual Learning Path. Every event is limited to a fixed, recognized curriculum identifier — a specific Lesson, Challenge, Success Criterion, or Curated Scene — and any value that is not one of those is refused before it is sent, so names, typed content, personal imagery, and advertising profiles cannot be included. Events are delivered only to Learn Photo's own origin and never to another site, so they cannot become a cross-site identifier.</p>
       <p>Analytics failure or blocking never affects the Learning Loop, Progress, rendering, or page responsiveness; the events below are the complete list Learn Photo can send.</p>
       <table aria-label="Anonymous analytics events" className="scale-table">
         <thead><tr><th scope="col">Event</th><th scope="col">Purpose</th><th scope="col">Properties</th></tr></thead>

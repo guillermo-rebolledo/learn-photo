@@ -52,6 +52,26 @@ test("Sandbox scene selection is tracked as Sandbox use", async ({ page }) => {
   await expect.poll(() => events.some((event) => event.name === "sandbox_scene_viewed" && event.properties.sceneId === "moving-cyclist")).toBe(true);
 });
 
+test("Night Sky Attempts emit validated events, proving the inlined registry matches the bonus", async ({ page }) => {
+  const events: CapturedEvent[] = [];
+  await page.route("**/analytics/events", async (route) => {
+    events.push(route.request().postDataJSON());
+    await route.fulfill({ status: 204, body: "" });
+  });
+
+  await page.goto("/night-sky");
+  const sharp = page.getByRole("region", { name: "Relatively sharp stars Challenge" });
+  await sharp.getByLabel("Bulb Exposure duration").selectOption("30");
+  await sharp.getByRole("button", { name: "Take photo" }).click();
+
+  // The event only reaches the beacon if buildAnalyticsEvent accepted its lessonSlug, challengeId,
+  // sceneId, and criterion ids — so receiving it proves the inlined Night Sky registry is correct.
+  await expect.poll(() => events.some((event) => event.name === "challenge_attempted" && event.properties.challengeId === "night-sky-sharp")).toBe(true);
+  const nightSkyEvent = events.find((event) => event.properties.challengeId === "night-sky-sharp");
+  expect(nightSkyEvent?.properties.lessonSlug).toBe("night-sky");
+  expect(nightSkyEvent?.properties.sceneId).toBe("night-sky");
+});
+
 test("a blocked analytics endpoint never breaks the Learning Loop", async ({ page }) => {
   await page.route("**/analytics/events", (route) => route.abort());
 
